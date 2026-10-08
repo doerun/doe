@@ -1,0 +1,932 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://doe.dev/schemas/onnx-vulkan-cpu-evidence.schema.json",
+  "title": "Bounded ONNX Vulkan CPU evidence",
+  "$defs": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "application",
+        "classification",
+        "command",
+        "preparation",
+        "sampler",
+        "schemaVersion",
+        "sources"
+      ],
+      "properties": {
+        "application": {
+          "$ref": "#/$defs/identity"
+        },
+        "bridge": {
+          "$ref": "#/$defs/identity"
+        },
+        "classification": {
+          "const": "diagnostic-cpu-build"
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preparation": {
+          "$ref": "#/$defs/identity"
+        },
+        "sampler": {
+          "$ref": "#/$defs/identity"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identity"
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "locations",
+        "medianCpuNs",
+        "medianWallNs",
+        "modules",
+        "overruns",
+        "procs",
+        "run",
+        "samples",
+        "schemaVersion",
+        "summary",
+        "threadIds",
+        "unmappedSamples"
+      ],
+      "properties": {
+        "classification": {
+          "const": "diagnostic-cpu-profile"
+        },
+        "frameCandidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "address",
+              "function",
+              "leaves",
+              "libraryPath",
+              "samples",
+              "source"
+            ],
+            "properties": {
+              "address": {
+                "type": "string"
+              },
+              "function": {
+                "type": "string"
+              },
+              "leaves": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "address",
+                    "libraryPath",
+                    "samples"
+                  ],
+                  "properties": {
+                    "address": {
+                      "type": "string"
+                    },
+                    "libraryPath": {
+                      "type": "string"
+                    },
+                    "samples": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "libraryPath": {
+                "type": "string"
+              },
+              "samples": {
+                "type": "number"
+              },
+              "source": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "address",
+              "function",
+              "inlineFrames",
+              "libraryPath",
+              "samples",
+              "source"
+            ],
+            "properties": {
+              "address": {
+                "type": "string"
+              },
+              "function": {
+                "type": "string"
+              },
+              "inlineFrames": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "function",
+                    "source"
+                  ],
+                  "properties": {
+                    "function": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "libraryPath": {
+                "type": "string"
+              },
+              "samples": {
+                "type": "number"
+              },
+              "source": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "mappingLoads": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "end",
+              "library",
+              "loadBias",
+              "segments",
+              "start"
+            ],
+            "properties": {
+              "end": {
+                "type": "number"
+              },
+              "library": {
+                "$ref": "#/$defs/identity"
+              },
+              "loadBias": {
+                "type": "number"
+              },
+              "segments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "fileBytes",
+                    "offset",
+                    "virtualAddress"
+                  ],
+                  "properties": {
+                    "fileBytes": {
+                      "type": "number"
+                    },
+                    "offset": {
+                      "type": "number"
+                    },
+                    "virtualAddress": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "start": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "medianCpuNs": {
+          "type": "number"
+        },
+        "medianWallNs": {
+          "type": "number"
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "library",
+              "samples"
+            ],
+            "properties": {
+              "library": {
+                "$ref": "#/$defs/identity"
+              },
+              "samples": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "overruns": {
+          "type": "number"
+        },
+        "procs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "count",
+              "exclusiveCpuNs",
+              "inclusiveCpuNs",
+              "index"
+            ],
+            "properties": {
+              "count": {
+                "type": "number"
+              },
+              "exclusiveCpuNs": {
+                "type": "number"
+              },
+              "inclusiveCpuNs": {
+                "type": "number"
+              },
+              "index": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "run": {
+          "$ref": "#/$defs/identity"
+        },
+        "samples": {
+          "type": "number"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "sites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "index",
+              "name",
+              "samples"
+            ],
+            "properties": {
+              "index": {
+                "type": "number"
+              },
+              "name": {
+                "type": "string"
+              },
+              "samples": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "dropped",
+                "mainThreadCpuShare",
+                "processCpuNs",
+                "runs",
+                "threadCpuNs"
+              ],
+              "properties": {
+                "dropped": {
+                  "type": "number"
+                },
+                "mainThreadCpuShare": {
+                  "type": "number"
+                },
+                "processCpuNs": {
+                  "type": "number"
+                },
+                "runs": {
+                  "type": "number"
+                },
+                "threadCpuNs": {
+                  "type": "number"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "threadIds": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "unmappedSamples": {
+          "type": "number"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "application",
+        "classification",
+        "environment",
+        "exitCode",
+        "log",
+        "periodUs",
+        "qualification",
+        "runs",
+        "schemaVersion"
+      ],
+      "properties": {
+        "application": {
+          "$ref": "#/$defs/identity"
+        },
+        "bridge": {
+          "$ref": "#/$defs/identity"
+        },
+        "classification": {
+          "const": "diagnostic-cpu-run"
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "CAMPAIGN_ARM",
+            "CAMPAIGN_ATOL",
+            "CAMPAIGN_BRIDGE",
+            "CAMPAIGN_CONTEXT",
+            "CAMPAIGN_MODE",
+            "CAMPAIGN_NATIVE",
+            "CAMPAIGN_OBSERVATIONS",
+            "CAMPAIGN_PROFILE",
+            "CAMPAIGN_PROVIDER",
+            "CAMPAIGN_REFERENCE",
+            "CAMPAIGN_RTOL",
+            "CAMPAIGN_RUNS",
+            "CAMPAIGN_WARMUP",
+            "DOE_CPU_MAPS",
+            "DOE_CPU_PERIOD_US",
+            "DOE_CPU_SAMPLES",
+            "HOME",
+            "MESA_SHADER_CACHE_DIR",
+            "XDG_CACHE_HOME"
+          ],
+          "properties": {
+            "CAMPAIGN_ARM": {
+              "type": "string"
+            },
+            "CAMPAIGN_ATOL": {
+              "type": "string"
+            },
+            "CAMPAIGN_BRIDGE": {
+              "type": "string"
+            },
+            "CAMPAIGN_CONTEXT": {
+              "type": "string"
+            },
+            "CAMPAIGN_MODE": {
+              "type": "string"
+            },
+            "CAMPAIGN_NATIVE": {
+              "type": "string"
+            },
+            "CAMPAIGN_OBSERVATIONS": {
+              "type": "string"
+            },
+            "CAMPAIGN_PROFILE": {
+              "type": "string"
+            },
+            "CAMPAIGN_PROVIDER": {
+              "type": "string"
+            },
+            "CAMPAIGN_REFERENCE": {
+              "type": "string"
+            },
+            "CAMPAIGN_RTOL": {
+              "type": "string"
+            },
+            "CAMPAIGN_RUNS": {
+              "type": "string"
+            },
+            "CAMPAIGN_WARMUP": {
+              "type": "string"
+            },
+            "DOE_CPU_MAPS": {
+              "type": "string"
+            },
+            "DOE_CPU_PERIOD_US": {
+              "type": "string"
+            },
+            "DOE_CPU_SAMPLES": {
+              "type": "string"
+            },
+            "DOE_CPU_SPANS": {
+              "type": "string"
+            },
+            "HOME": {
+              "type": "string"
+            },
+            "MESA_SHADER_CACHE_DIR": {
+              "type": "string"
+            },
+            "XDG_CACHE_HOME": {
+              "type": "string"
+            }
+          }
+        },
+        "exitCode": {
+          "type": "number"
+        },
+        "log": {
+          "$ref": "#/$defs/identity"
+        },
+        "maps": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/identity"
+            }
+          ]
+        },
+        "negativeControl": {
+          "type": "string"
+        },
+        "observations": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/identity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "periodUs": {
+          "type": "number"
+        },
+        "policy": {
+          "$ref": "#/$defs/identity"
+        },
+        "qualification": {
+          "$ref": "#/$defs/identity"
+        },
+        "runs": {
+          "type": "number"
+        },
+        "sampleRecordBytes": {
+          "type": "number"
+        },
+        "samples": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/identity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaVersion": {
+          "const": 1
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checks",
+        "classification",
+        "diagnosticAdmission",
+        "disposition",
+        "intrusiveSpanControls",
+        "limitations",
+        "nativeInstructionLocations",
+        "originalDoeOverDawnCpuRatios",
+        "originalProcessControls",
+        "performanceClaim",
+        "performanceCorrections",
+        "policy",
+        "profiles",
+        "projections",
+        "reason",
+        "samplingCpuRatios",
+        "schemaVersion",
+        "siteShares"
+      ],
+      "properties": {
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "limit",
+              "observed",
+              "passed"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "limit": {
+                "type": "number"
+              },
+              "observed": {
+                "type": "number"
+              },
+              "passed": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "classification": {
+          "const": "vulkan-cpu-attribution-decision"
+        },
+        "diagnosticAdmission": {
+          "type": "boolean"
+        },
+        "disposition": {
+          "type": "string"
+        },
+        "intrusiveSpanControls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "admitted",
+              "cpuRatio",
+              "limit",
+              "run"
+            ],
+            "properties": {
+              "admitted": {
+                "type": "boolean"
+              },
+              "cpuRatio": {
+                "type": "number"
+              },
+              "limit": {
+                "type": "number"
+              },
+              "run": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nativeInstructionLocations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "function",
+              "nativeShare",
+              "samples"
+            ],
+            "properties": {
+              "function": {
+                "type": "string"
+              },
+              "nativeShare": {
+                "type": "number"
+              },
+              "samples": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "originalDoeOverDawnCpuRatios": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "originalProcessControls": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "dawn",
+            "doe"
+          ],
+          "properties": {
+            "dawn": {
+              "type": "number"
+            },
+            "doe": {
+              "type": "number"
+            }
+          }
+        },
+        "performanceClaim": {
+          "type": "boolean"
+        },
+        "performanceCorrections": {
+          "type": "number"
+        },
+        "policy": {
+          "$ref": "#/$defs/identity"
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identity"
+          }
+        },
+        "projections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "idealizedDawnGainRatio",
+              "idealizedRetainedDoeGainRatio",
+              "owner",
+              "qualifiedPrediction",
+              "requiredGainRatio",
+              "run",
+              "sampleShare"
+            ],
+            "properties": {
+              "idealizedDawnGainRatio": {
+                "type": "number"
+              },
+              "idealizedRetainedDoeGainRatio": {
+                "type": "number"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "ownerAdmission": {
+                "type": "boolean"
+              },
+              "passesProjectedCriteria": {
+                "type": "boolean"
+              },
+              "qualifiedPrediction": {
+                "type": "boolean"
+              },
+              "requiredGainRatio": {
+                "type": "number"
+              },
+              "run": {
+                "type": "string"
+              },
+              "sampleShare": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "reason": {
+          "type": "string"
+        },
+        "samplingCpuRatios": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "siteShares": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "owner",
+              "samples",
+              "share"
+            ],
+            "properties": {
+              "owner": {
+                "type": "string"
+              },
+              "samples": {
+                "type": "number"
+              },
+              "share": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "classification",
+        "files",
+        "sources",
+        "nativeSources",
+        "baseCommit",
+        "historicalManifest",
+        "performanceCorrections",
+        "custody",
+        "scope"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "classification": {
+          "const": "vulkan-cpu-attribution-manifest"
+        },
+        "files": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sha256",
+              "contentSha256",
+              "contentBytes",
+              "compression"
+            ],
+            "properties": {
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "contentSha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "contentBytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "compression": {
+                "enum": [
+                  "gzip",
+                  "none"
+                ]
+              }
+            }
+          }
+        },
+        "sources": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "nativeSources": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "baseCommit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "historicalManifest": {
+          "$ref": "#/$defs/identity"
+        },
+        "performanceCorrections": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "custody": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "archive",
+            "entries"
+          ],
+          "properties": {
+            "archive": {
+              "$ref": "#/$defs/identity"
+            },
+            "entries": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "path",
+                  "member",
+                  "sha256"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "member": {
+                    "type": "string"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "callerCollection",
+            "earlierPrototypes",
+            "performance"
+          ],
+          "properties": {
+            "callerCollection": {
+              "type": "string"
+            },
+            "earlierPrototypes": {
+              "type": "string"
+            },
+            "performance": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

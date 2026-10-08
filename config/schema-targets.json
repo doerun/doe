@@ -2,6 +2,22 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/onnx-vulkan-cpu-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-cpu-attribution/manifest.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-cpu-evidence.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-cpu-attribution/decision.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-cpu-investigation.schema.json",
+      "data": "reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-cpu-attribution/policy.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-cpu-investigation.schema.json",
+      "data": "config/onnx-vulkan-cpu-investigation.json"
+    },
+    {
       "schema": "config/onnx-vulkan-evidence.schema.json",
       "data": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/cache-audit.json"
     },

@@ -1,0 +1,1532 @@
+{
+  "checks": [
+    {
+      "id": "0-doe-hooks",
+      "limit": 1.1,
+      "observed": 1.023391812865497,
+      "passed": true
+    },
+    {
+      "id": "0-sample-1000-doe",
+      "limit": 1.1,
+      "observed": 1.0285714285714285,
+      "passed": true
+    },
+    {
+      "id": "0-sample-2000-doe",
+      "limit": 1.1,
+      "observed": 1.0057142857142858,
+      "passed": true
+    },
+    {
+      "id": "0-dawn-hooks",
+      "limit": 1.1,
+      "observed": 1.0280898876404494,
+      "passed": true
+    },
+    {
+      "id": "0-sample-1000-dawn",
+      "limit": 1.1,
+      "observed": 1.010928961748634,
+      "passed": true
+    },
+    {
+      "id": "0-sample-2000-dawn",
+      "limit": 1.1,
+      "observed": 1.0163934426229508,
+      "passed": true
+    },
+    {
+      "id": "1-doe-hooks",
+      "limit": 1.1,
+      "observed": 1.0590551181102361,
+      "passed": true
+    },
+    {
+      "id": "1-sample-1000-doe",
+      "limit": 1.1,
+      "observed": 0.9628252788104089,
+      "passed": true
+    },
+    {
+      "id": "1-sample-2000-doe",
+      "limit": 1.1,
+      "observed": 1.0055762081784387,
+      "passed": true
+    },
+    {
+      "id": "1-dawn-hooks",
+      "limit": 1.1,
+      "observed": 1.0726256983240223,
+      "passed": true
+    },
+    {
+      "id": "1-sample-1000-dawn",
+      "limit": 1.1,
+      "observed": 0.9869791666666666,
+      "passed": true
+    },
+    {
+      "id": "1-sample-2000-dawn",
+      "limit": 1.1,
+      "observed": 0.984375,
+      "passed": true
+    },
+    {
+      "id": "doe-original-process-control",
+      "limit": 1.05,
+      "observed": 1.0098425196850394,
+      "passed": true
+    },
+    {
+      "id": "dawn-original-process-control",
+      "limit": 1.05,
+      "observed": 1.0056179775280898,
+      "passed": true
+    }
+  ],
+  "classification": "vulkan-cpu-attribution-decision",
+  "diagnosticAdmission": true,
+  "disposition": "no-admitted-candidate",
+  "intrusiveSpanControls": [
+    {
+      "admitted": true,
+      "cpuRatio": 1.3981132075471698,
+      "limit": 1.5,
+      "run": "0-spans-doe"
+    },
+    {
+      "admitted": false,
+      "cpuRatio": 1.606060606060606,
+      "limit": 1.5,
+      "run": "0-spans-dawn"
+    },
+    {
+      "admitted": true,
+      "cpuRatio": 1.3785310734463276,
+      "limit": 1.5,
+      "run": "1-spans-doe"
+    },
+    {
+      "admitted": false,
+      "cpuRatio": 1.6005434782608696,
+      "limit": 1.5,
+      "run": "1-spans-dawn"
+    }
+  ],
+  "limitations": [
+    "Main-thread CPU PC sampling; other threads are bounded by separate process CPU measurements.",
+    "Timer overruns are retained and never assigned to the observed instruction.",
+    "Frame pointers are bounded caller candidates; inline frames are symbolizer observations, not a complete unwind.",
+    "Stripped-library labels can identify nearby exports rather than the executing function.",
+    "No candidate or independent performance confirmation was executed.",
+    "General callback/future conformance and submitted-work interruption remain open."
+  ],
+  "nativeInstructionLocations": [
+    {
+      "function": "compiler_rt.memcpy.memcpyFast",
+      "nativeShare": 0.20714285714285716,
+      "samples": 1073
+    },
+    {
+      "function": "native.support.doe_label_store.remove",
+      "nativeShare": 0.07953667953667953,
+      "samples": 412
+    },
+    {
+      "function": "native.support.doe_label_store.set",
+      "nativeShare": 0.060424710424710426,
+      "samples": 313
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.wgpuGetProcAddress",
+      "nativeShare": 0.044787644787644784,
+      "samples": 232
+    },
+    {
+      "function": "native.resource.doe_bind_group_native.doeNativeBindGroupRelease",
+      "nativeShare": 0.035907335907335906,
+      "samples": 186
+    },
+    {
+      "function": "compiler_rt.memset.memset",
+      "nativeShare": 0.0333976833976834,
+      "samples": 173
+    },
+    {
+      "function": "backend.vulkan.vk_pipeline.set_compute_shader_spirv_with_hashes__anon_4029",
+      "nativeShare": 0.033204633204633204,
+      "samples": 172
+    },
+    {
+      "function": "heap.debug_allocator.DebugAllocator(.{ .stack_trace_frames = 0, .enable_memory_limit = false, .safety = false, .thread_safe = true, .MutexType = null, .never_unmap = false, .retain_metadata = false, .verbose_log = false, .backing_allocator_zeroes = true, .resize_stack_traces = false, .canary = 10534666094765928719, .page_size = 131072 }).alloc",
+      "nativeShare": 0.030694980694980695,
+      "samples": 159
+    },
+    {
+      "function": "hash.wyhash.Wyhash.update",
+      "nativeShare": 0.02895752895752896,
+      "samples": 150
+    },
+    {
+      "function": "mem.eql__anon_4096",
+      "nativeShare": 0.020463320463320462,
+      "samples": 106
+    },
+    {
+      "function": "dropin.dropin_proc_manifest.manifestOwnerForSymbol",
+      "nativeShare": 0.01833976833976834,
+      "samples": 95
+    },
+    {
+      "function": "backend.vulkan.vk_shared_pipeline.Pipeline.matches",
+      "nativeShare": 0.014285714285714285,
+      "samples": 74
+    },
+    {
+      "function": "heap.debug_allocator.DebugAllocator(.{ .stack_trace_frames = 0, .enable_memory_limit = false, .safety = false, .thread_safe = true, .MutexType = null, .never_unmap = false, .retain_metadata = false, .verbose_log = false, .backing_allocator_zeroes = true, .resize_stack_traces = false, .canary = 10534666094765928719, .page_size = 131072 }).free",
+      "nativeShare": 0.013513513513513514,
+      "samples": 70
+    },
+    {
+      "function": "native.compute.doe_compute_ext_native.doeNativeComputePipelineGetBindGroupLayout",
+      "nativeShare": 0.013127413127413128,
+      "samples": 68
+    },
+    {
+      "function": "native.resource.doe_bind_group_native.doeNativeBindGroupLayoutRelease",
+      "nativeShare": 0.00945945945945946,
+      "samples": 49
+    },
+    {
+      "function": "posix.getenv",
+      "nativeShare": 0.008687258687258687,
+      "samples": 45
+    },
+    {
+      "function": "backend.vulkan.vk_pipeline_cache.resolve_descriptor_state_hash__anon_4825",
+      "nativeShare": 0.008108108108108109,
+      "samples": 42
+    },
+    {
+      "function": "native.queue.doe_submission_validation.validate",
+      "nativeShare": 0.007722007722007722,
+      "samples": 40
+    },
+    {
+      "function": "native.resource.doe_bind_group_native.doeNativeDeviceCreateBindGroup",
+      "nativeShare": 0.007528957528957529,
+      "samples": 39
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.routeAndRecordForName",
+      "nativeShare": 0.007335907335907336,
+      "samples": 38
+    },
+    {
+      "function": "native.vulkan.vulkan_compute_native.collectDispatchBindings",
+      "nativeShare": 0.007142857142857143,
+      "samples": 37
+    },
+    {
+      "function": "native.vulkan.vulkan_compute_bindings.appendBindGroupBinding",
+      "nativeShare": 0.0069498069498069494,
+      "samples": 36
+    },
+    {
+      "function": "backend.vulkan.vk_descriptor_identity.snapshot__anon_5404",
+      "nativeShare": 0.0069498069498069494,
+      "samples": 36
+    },
+    {
+      "function": "native.vulkan.vulkan_compute_native.vulkan_prepare_recorded_dispatch__anon_47816",
+      "nativeShare": 0.006756756756756757,
+      "samples": 35
+    },
+    {
+      "function": "hash.wyhash.Wyhash.final",
+      "nativeShare": 0.006370656370656371,
+      "samples": 33
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30331",
+      "nativeShare": 0.005019305019305019,
+      "samples": 26
+    },
+    {
+      "function": "backend.vulkan.vk_pipeline_cache.discard_buffer_descriptors__anon_48794",
+      "nativeShare": 0.00444015444015444,
+      "samples": 23
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30505",
+      "nativeShare": 0.003861003861003861,
+      "samples": 20
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30093",
+      "nativeShare": 0.003861003861003861,
+      "samples": 20
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30147",
+      "nativeShare": 0.003861003861003861,
+      "samples": 20
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30158",
+      "nativeShare": 0.003861003861003861,
+      "samples": 20
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30627",
+      "nativeShare": 0.003861003861003861,
+      "samples": 20
+    },
+    {
+      "function": "native.queue.doe_queue_submit_vulkan.submit_vulkan_commands",
+      "nativeShare": 0.003861003861003861,
+      "samples": 20
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30679",
+      "nativeShare": 0.003667953667953668,
+      "samples": 19
+    },
+    {
+      "function": "hash.wyhash.Wyhash.hash",
+      "nativeShare": 0.003667953667953668,
+      "samples": 19
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30185",
+      "nativeShare": 0.003667953667953668,
+      "samples": 19
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30046",
+      "nativeShare": 0.003667953667953668,
+      "samples": 19
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30579",
+      "nativeShare": 0.003667953667953668,
+      "samples": 19
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30764",
+      "nativeShare": 0.0034749034749034747,
+      "samples": 18
+    },
+    {
+      "function": "backend.vulkan.vk_pipeline_cache.stash_active_descriptor_state__anon_4835",
+      "nativeShare": 0.0034749034749034747,
+      "samples": 18
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30000",
+      "nativeShare": 0.003281853281853282,
+      "samples": 17
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30884",
+      "nativeShare": 0.003281853281853282,
+      "samples": 17
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30917",
+      "nativeShare": 0.003281853281853282,
+      "samples": 17
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30113",
+      "nativeShare": 0.003281853281853282,
+      "samples": 17
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30298",
+      "nativeShare": 0.003281853281853282,
+      "samples": 17
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30723",
+      "nativeShare": 0.003281853281853282,
+      "samples": 17
+    },
+    {
+      "function": "native.command.doe_encoder_native.doeNativeDeviceCreateCommandEncoder",
+      "nativeShare": 0.003088803088803089,
+      "samples": 16
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30072",
+      "nativeShare": 0.003088803088803089,
+      "samples": 16
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30638",
+      "nativeShare": 0.003088803088803089,
+      "samples": 16
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30178",
+      "nativeShare": 0.003088803088803089,
+      "samples": 16
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30456",
+      "nativeShare": 0.003088803088803089,
+      "samples": 16
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30607",
+      "nativeShare": 0.003088803088803089,
+      "samples": 16
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30834",
+      "nativeShare": 0.003088803088803089,
+      "samples": 16
+    },
+    {
+      "function": "hash_map.HashMapUnmanaged(u64,backend.vulkan.vk_resources.ComputeBuffer,hash_map.AutoContext(u64),80).put",
+      "nativeShare": 0.0028957528957528956,
+      "samples": 15
+    },
+    {
+      "function": "backend.vulkan.vk_sync.wait_for_fence_fast",
+      "nativeShare": 0.0028957528957528956,
+      "samples": 15
+    },
+    {
+      "function": "dropin.dropin_runtime_config.activeBehaviorConfig",
+      "nativeShare": 0.0028957528957528956,
+      "samples": 15
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30234",
+      "nativeShare": 0.0028957528957528956,
+      "samples": 15
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30649",
+      "nativeShare": 0.0028957528957528956,
+      "samples": 15
+    },
+    {
+      "function": "backend.vulkan.vk_pipeline_cache.activate_cached_compute_state__anon_4216",
+      "nativeShare": 0.0028957528957528956,
+      "samples": 15
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30133",
+      "nativeShare": 0.0028957528957528956,
+      "samples": 15
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30527",
+      "nativeShare": 0.0028957528957528956,
+      "samples": 15
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30706",
+      "nativeShare": 0.0028957528957528956,
+      "samples": 15
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30906",
+      "nativeShare": 0.0028957528957528956,
+      "samples": 15
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30372",
+      "nativeShare": 0.002702702702702703,
+      "samples": 14
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30384",
+      "nativeShare": 0.002702702702702703,
+      "samples": 14
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30586",
+      "nativeShare": 0.002702702702702703,
+      "samples": 14
+    },
+    {
+      "function": "native.shader.shader_binding_reflection.ensureShaderBindings",
+      "nativeShare": 0.002702702702702703,
+      "samples": 14
+    },
+    {
+      "function": "native.vulkan.vulkan_compute_native.clearPreparedBindingCacheSlot",
+      "nativeShare": 0.0025096525096525097,
+      "samples": 13
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30222",
+      "nativeShare": 0.0025096525096525097,
+      "samples": 13
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30471",
+      "nativeShare": 0.0025096525096525097,
+      "samples": 13
+    },
+    {
+      "function": "runtime.diagnostics.error_scope.ErrorScopeStack.pop",
+      "nativeShare": 0.0025096525096525097,
+      "samples": 13
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30034",
+      "nativeShare": 0.0025096525096525097,
+      "samples": 13
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30257",
+      "nativeShare": 0.0025096525096525097,
+      "samples": 13
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30782",
+      "nativeShare": 0.0025096525096525097,
+      "samples": 13
+    },
+    {
+      "function": "native.compute.doe_compute_ext_native.doeNativeComputePassSetBindGroup",
+      "nativeShare": 0.0023166023166023165,
+      "samples": 12
+    },
+    {
+      "function": "dropin.wgpu_dropin_ext_a_exports.wgpuBufferAddRef",
+      "nativeShare": 0.0023166023166023165,
+      "samples": 12
+    },
+    {
+      "function": "native.compute.doe_compute_bind_groups.populateFlatBindings",
+      "nativeShare": 0.0023166023166023165,
+      "samples": 12
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30309",
+      "nativeShare": 0.0023166023166023165,
+      "samples": 12
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30559",
+      "nativeShare": 0.0023166023166023165,
+      "samples": 12
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30871",
+      "nativeShare": 0.0023166023166023165,
+      "samples": 12
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30015",
+      "nativeShare": 0.0021235521235521237,
+      "samples": 11
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30664",
+      "nativeShare": 0.0021235521235521237,
+      "samples": 11
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30775",
+      "nativeShare": 0.0021235521235521237,
+      "samples": 11
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30807",
+      "nativeShare": 0.0021235521235521237,
+      "samples": 11
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30825",
+      "nativeShare": 0.0021235521235521237,
+      "samples": 11
+    },
+    {
+      "function": "backend.vulkan.vk_pipeline_cache.cached_compute_state__anon_4075",
+      "nativeShare": 0.0019305019305019305,
+      "samples": 10
+    },
+    {
+      "function": "hash_map.HashMapUnmanaged(u64,backend.vulkan.vk_resources.ComputeBuffer,hash_map.AutoContext(u64),80).get",
+      "nativeShare": 0.0019305019305019305,
+      "samples": 10
+    },
+    {
+      "function": "dropin.dropin_runtime_config.symbolOwnerForName",
+      "nativeShare": 0.0019305019305019305,
+      "samples": 10
+    },
+    {
+      "function": "native.vulkan.vulkan_pipeline_hash.compute_layout_hash",
+      "nativeShare": 0.0019305019305019305,
+      "samples": 10
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30061",
+      "nativeShare": 0.0019305019305019305,
+      "samples": 10
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30415",
+      "nativeShare": 0.0019305019305019305,
+      "samples": 10
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31490",
+      "nativeShare": 0.0019305019305019305,
+      "samples": 10
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30789",
+      "nativeShare": 0.0017374517374517374,
+      "samples": 9
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30796",
+      "nativeShare": 0.0017374517374517374,
+      "samples": 9
+    },
+    {
+      "function": "native.diagnostics.doe_error_scope_native.doeNativeDevicePushErrorScope",
+      "nativeShare": 0.0017374517374517374,
+      "samples": 9
+    },
+    {
+      "function": "native.compute.doe_compute_ext_native.appendRecordedDispatch",
+      "nativeShare": 0.0017374517374517374,
+      "samples": 9
+    },
+    {
+      "function": "backend.vulkan.vk_pipeline_cache.activate_cached_descriptor_state__anon_4880",
+      "nativeShare": 0.0017374517374517374,
+      "samples": 9
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30540",
+      "nativeShare": 0.0017374517374517374,
+      "samples": 9
+    },
+    {
+      "function": "array_list.Aligned(contracts.resource_lease.ResourceLease,null).ensureUnusedCapacity",
+      "nativeShare": 0.0017374517374517374,
+      "samples": 9
+    },
+    {
+      "function": "backend.vulkan.vk_sync.FencePool.drain",
+      "nativeShare": 0.0015444015444015444,
+      "samples": 8
+    },
+    {
+      "function": "backend.vulkan.vk_descriptors.prepare__anon_4805",
+      "nativeShare": 0.0015444015444015444,
+      "samples": 8
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30211",
+      "nativeShare": 0.0015444015444015444,
+      "samples": 8
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30278",
+      "nativeShare": 0.0015444015444015444,
+      "samples": 8
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30551",
+      "nativeShare": 0.0015444015444015444,
+      "samples": 8
+    },
+    {
+      "function": "native.compute.doe_compute_ext_native.doeNativeComputePassSetPipeline",
+      "nativeShare": 0.0015444015444015444,
+      "samples": 8
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31250",
+      "nativeShare": 0.0015444015444015444,
+      "samples": 8
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31272",
+      "nativeShare": 0.0015444015444015444,
+      "samples": 8
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31335",
+      "nativeShare": 0.0015444015444015444,
+      "samples": 8
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31510",
+      "nativeShare": 0.0015444015444015444,
+      "samples": 8
+    },
+    {
+      "function": "backend.vulkan.native_runtime.NativeVulkanRuntime.record_prepared_dispatch_replay_on",
+      "nativeShare": 0.0013513513513513514,
+      "samples": 7
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30395",
+      "nativeShare": 0.0013513513513513514,
+      "samples": 7
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30937",
+      "nativeShare": 0.0013513513513513514,
+      "samples": 7
+    },
+    {
+      "function": "native.vulkan.vulkan_pipeline_hash.DescriptorBindingsHasher.update",
+      "nativeShare": 0.0011583011583011582,
+      "samples": 6
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31011",
+      "nativeShare": 0.0011583011583011582,
+      "samples": 6
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31051",
+      "nativeShare": 0.0011583011583011582,
+      "samples": 6
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31062",
+      "nativeShare": 0.0011583011583011582,
+      "samples": 6
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31071",
+      "nativeShare": 0.0011583011583011582,
+      "samples": 6
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31167",
+      "nativeShare": 0.0011583011583011582,
+      "samples": 6
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31235",
+      "nativeShare": 0.0011583011583011582,
+      "samples": 6
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31347",
+      "nativeShare": 0.0011583011583011582,
+      "samples": 6
+    },
+    {
+      "function": "native.lifecycle.doe_instance_device_native.doeNativeInstanceWaitAny",
+      "nativeShare": 0.0011583011583011582,
+      "samples": 6
+    },
+    {
+      "function": "native.vulkan.vulkan_compute_native.prepare_pipeline_bindings",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "backend.vulkan.vk_upload.submit_replay_command_buffer__anon_4298",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30200",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30895",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30960",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31145",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31203",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31362",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31409",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31445",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31465",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31483",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "native.queue.doe_queue_submit_native.doeNativeQueueSubmit",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_ext_c.wgpuBufferGetSize",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "native.resource.doe_buffer_ops_native.doeNativeDeviceCreateBuffer",
+      "nativeShare": 0.0009652509652509653,
+      "samples": 5
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31004",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "backend.vulkan.vk_resources.create_compute_buffer_with_kind__anon_5090",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30426",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30981",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31319",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31434",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31499",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "backend.vulkan.vk_resources.destroy_compute_buffer__anon_37193",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "array_list.Aligned(native.support.doe_native_command_types.RecordedCmd,null).ensureUnusedCapacity",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "native.diagnostics.doe_program_identity_trace.enabled",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31134",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31574",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "native.command.doe_encoder_native.doeNativeCommandEncoderRelease",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30974",
+      "nativeShare": 0.0007722007722007722,
+      "samples": 4
+    },
+    {
+      "function": "native.shader.doe_shader_native.doeNativeComputePipelineRelease",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "backend.vulkan.vk_shared_pipeline.Registry.release",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "heap.debug_allocator.DebugAllocator(.{ .stack_trace_frames = 0, .enable_memory_limit = false, .safety = false, .thread_safe = true, .MutexType = null, .never_unmap = false, .retain_metadata = false, .verbose_log = false, .backing_allocator_zeroes = true, .resize_stack_traces = false, .canary = 10534666094765928719, .page_size = 131072 }).remap",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "native.compute.doe_compute_preconditions_native.validate_bind_groups",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "backend.vulkan.native_runtime.NativeVulkanRuntime.begin_prepared_dispatch_replay",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30947",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30992",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31022",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31033",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31078",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31105",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31391",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31420",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31472",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "native.resource.doe_buffer_ops_native.doeNativeBufferRelease",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30967",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31040",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31123",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31156",
+      "nativeShare": 0.0005791505791505791,
+      "samples": 3
+    },
+    {
+      "function": "backend.vulkan.vk_upload.begin_streaming_copy__anon_5240",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "backend.vulkan.vk_upload.record_replay_buffer_copy__anon_26530",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31085",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31219",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31295",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "native.resource.doe_buffer_ops_native.doeNativeBufferDestroy",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "native.support.doe_native_object_helpers.make__anon_34814",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "native.command.doe_encoder_native.doeNativeCommandBufferRelease",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "native.queue.doe_queue_submit_vulkan.bindingStatesEqual",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "native.compute.doe_compute_ext_native.doeNativeComputePassRelease",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_30928",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31283",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "backend.vulkan.vk_sync.FencePool.acquire",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "backend.vulkan.vk_upload.finalize_recorded_submit_replay__anon_4265",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "native.command.doe_encoder_native.doeNativeCopyBufferToBuffer",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31187",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31306",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "dropin.wgpu_dropin_lib.symbolViewEq__anon_31582",
+      "nativeShare": 0.0003861003861003861,
+      "samples": 2
+    },
+    {
+      "function": "backend.vulkan.native_runtime.NativeVulkanRuntime.waitForDestruction",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "native.command.doe_encoder_native.doeNativeCommandEncoderFinish",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "dropin.wgpu_dropin_ext_a_core.bridge_pop_error_scope_callback",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "native.queue.doe_queue_copy_native.writeBufferValidated",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "dropin.dropin_abi_procs.wgpuBufferMapAsync",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "??",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "backend.vulkan.vk_sync.submitWithFence",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "native.resource.doe_buffer_ops_native.doeNativeBufferMapAsync",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "native.vulkan.vulkan_compute_native.vulkan_record_prepared_dispatch__anon_47829",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "dropin.dropin_abi_procs.wgpuComputePassEncoderSetBindGroup",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "dropin.dropin_abi_procs.wgpuComputePassEncoderDispatchWorkgroups",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "hash_map.HashMapUnmanaged(u64,array_list.Aligned(backend.vulkan.vk_upload.VkPoolEntry,null),hash_map.AutoContext(u64),80).getOrPut",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "native.command.doe_command_recording.reserve",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "native.support.doe_native_command_types.tryMergeDispatchIntoLast",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "backend.vulkan.vk_resources.stage_compute_buffer_write__anon_48497",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "dropin.dropin_abi_procs.wgpuComputePassEncoderSetPipeline",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    },
+    {
+      "function": "dropin.wgpu_dropin_ext_c.wgpuBufferGetUsage",
+      "nativeShare": 0.00019305019305019305,
+      "samples": 1
+    }
+  ],
+  "originalDoeOverDawnCpuRatios": [
+    1.4410112359550562,
+    1.4189944134078212
+  ],
+  "originalProcessControls": {
+    "dawn": 1.0056179775280898,
+    "doe": 1.0098425196850394
+  },
+  "performanceClaim": false,
+  "performanceCorrections": 0,
+  "policy": {
+    "path": "/home/x/deco/doe/bench/out/onnx-vulkan-cpu/20261008/caller-collection/policy.json",
+    "sha256": "41fadb9d64a4feb2abc6d15f00231971d8b5d6aa1338b764ad1af91eb3359c2b"
+  },
+  "profiles": [
+    {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-cpu/20261008/caller-collection/0-sample-1000-doe/profile-final.json",
+      "sha256": "fcd04bb05d6cd08105dfffdf4ec39e9776e8c2cd8b73f56881b46238e9ddfe6a"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-cpu/20261008/caller-collection/0-sample-2000-doe/profile-final.json",
+      "sha256": "69c1014859415d4f39b18387aba7e0bb08b82d34057de820ac17dcb4a7341cad"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-cpu/20261008/caller-collection/0-sample-1000-dawn/profile-final.json",
+      "sha256": "1ca30829003feb08b2bd279eaade5a9753f2daab3f6a24d22da3cb0ec1b066e5"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-cpu/20261008/caller-collection/0-sample-2000-dawn/profile-final.json",
+      "sha256": "77f71892884a22042d68ad6bbad9ada81003ffe36706b52a395659c0540000e5"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-cpu/20261008/caller-collection/1-sample-1000-doe/profile-final.json",
+      "sha256": "3fd1e7c465b38cf3eac1f8a0e3b14a281ebe9aab44a546898928af70a4d302c7"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-cpu/20261008/caller-collection/1-sample-2000-doe/profile-final.json",
+      "sha256": "b54f3acfa726af716fe3d51bae03229ab79ae2281dceae8275689263b3625c2c"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-cpu/20261008/caller-collection/1-sample-1000-dawn/profile-final.json",
+      "sha256": "3a9ea05971d841dda5fd0858cc91c1333640b9d125a3d051cee3833caa08e3a3"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/onnx-vulkan-cpu/20261008/caller-collection/1-sample-2000-dawn/profile-final.json",
+      "sha256": "b0be47b983145fb1b7963d1eceff918d04f08c0afd13776b24f0ba7268a3f02d"
+    }
+  ],
+  "projections": [
+    {
+      "idealizedDawnGainRatio": 0.8051696284329564,
+      "idealizedRetainedDoeGainRatio": 1.160258481421648,
+      "owner": "deviceCreateBindGroup",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "0-sample-1000-doe",
+      "sampleShare": 0.13812308549150654
+    },
+    {
+      "idealizedDawnGainRatio": 0.8023180940115904,
+      "idealizedRetainedDoeGainRatio": 1.1561493882807468,
+      "owner": "computePassEncoderDispatchWorkgroups",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "0-sample-1000-doe",
+      "sampleShare": 0.13505987190197716
+    },
+    {
+      "idealizedDawnGainRatio": 0.7427719821162444,
+      "idealizedRetainedDoeGainRatio": 1.0703427719821161,
+      "owner": "bufferRelease",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "0-sample-1000-doe",
+      "sampleShare": 0.0657198551935394
+    },
+    {
+      "idealizedDawnGainRatio": 0.7399049881235155,
+      "idealizedRetainedDoeGainRatio": 1.0662114014251782,
+      "owner": "deviceCreateBuffer",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "0-sample-1000-doe",
+      "sampleShare": 0.062099693678641044
+    },
+    {
+      "idealizedDawnGainRatio": 0.7887431706595,
+      "idealizedRetainedDoeGainRatio": 1.1365877712031558,
+      "owner": "deviceCreateBindGroup",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "0-sample-2000-doe",
+      "sampleShare": 0.12017353579175705
+    },
+    {
+      "idealizedDawnGainRatio": 0.8042087230253724,
+      "idealizedRetainedDoeGainRatio": 1.1588738059326293,
+      "owner": "computePassEncoderDispatchWorkgroups",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "0-sample-2000-doe",
+      "sampleShare": 0.1370932754880694
+    },
+    {
+      "idealizedDawnGainRatio": 0.7310654250902495,
+      "idealizedRetainedDoeGainRatio": 1.053473491773309,
+      "owner": "bufferRelease",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "0-sample-2000-doe",
+      "sampleShare": 0.050759219088937095
+    },
+    {
+      "idealizedDawnGainRatio": 0.7591699810619202,
+      "idealizedRetainedDoeGainRatio": 1.0939724727100142,
+      "owner": "deviceCreateBuffer",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "0-sample-2000-doe",
+      "sampleShare": 0.0859002169197397
+    },
+    {
+      "idealizedDawnGainRatio": 0.811913183108209,
+      "idealizedRetainedDoeGainRatio": 1.1521002710027102,
+      "owner": "deviceCreateBindGroup",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "1-sample-1000-doe",
+      "sampleShare": 0.13201999411937665
+    },
+    {
+      "idealizedDawnGainRatio": 0.8194077663369002,
+      "idealizedRetainedDoeGainRatio": 1.1627350427350427,
+      "owner": "computePassEncoderDispatchWorkgroups",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "1-sample-1000-doe",
+      "sampleShare": 0.1399588356365775
+    },
+    {
+      "idealizedDawnGainRatio": 0.7501620396042045,
+      "idealizedRetainedDoeGainRatio": 1.0644757433489829,
+      "owner": "bufferRelease",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "1-sample-1000-doe",
+      "sampleShare": 0.060570420464569244
+    },
+    {
+      "idealizedDawnGainRatio": 0.7511023868804241,
+      "idealizedRetainedDoeGainRatio": 1.0658100908806016,
+      "owner": "deviceCreateBuffer",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "1-sample-1000-doe",
+      "sampleShare": 0.06174654513378418
+    },
+    {
+      "idealizedDawnGainRatio": 0.8130153943523017,
+      "idealizedRetainedDoeGainRatio": 1.153664302600473,
+      "owner": "deviceCreateBindGroup",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "1-sample-2000-doe",
+      "sampleShare": 0.13319672131147542
+    },
+    {
+      "idealizedDawnGainRatio": 0.8069111023252549,
+      "idealizedRetainedDoeGainRatio": 1.1450023463162835,
+      "owner": "computePassEncoderDispatchWorkgroups",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "1-sample-2000-doe",
+      "sampleShare": 0.1266393442622951
+    },
+    {
+      "idealizedDawnGainRatio": 0.7440621198853822,
+      "idealizedRetainedDoeGainRatio": 1.0558199913457378,
+      "owner": "bufferRelease",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "1-sample-2000-doe",
+      "sampleShare": 0.052868852459016395
+    },
+    {
+      "idealizedDawnGainRatio": 0.7645742814829338,
+      "idealizedRetainedDoeGainRatio": 1.084926634059582,
+      "owner": "deviceCreateBuffer",
+      "ownerAdmission": false,
+      "passesProjectedCriteria": false,
+      "qualifiedPrediction": false,
+      "requiredGainRatio": 1.1,
+      "run": "1-sample-2000-doe",
+      "sampleShare": 0.07827868852459016
+    }
+  ],
+  "reason": "Matched processes reproduce excess CPU work. Binding-group creation, compute recording and retirement contribute; driver work remains common. No general correction has independently demonstrated the frozen predicted advantage against retained Doe and source-built Dawn. Intrusive timings and approximate sample projections cannot admit a patch.",
+  "samplingCpuRatios": [
+    1.0285714285714285,
+    1.0057142857142858,
+    1.010928961748634,
+    1.0163934426229508,
+    0.9628252788104089,
+    1.0055762081784387,
+    0.9869791666666666,
+    0.984375
+  ],
+  "schemaVersion": 1,
+  "siteShares": [
+    {
+      "owner": "outside-bridge",
+      "samples": 2528,
+      "share": 0.21538723694300077
+    },
+    {
+      "owner": "queueSubmit",
+      "samples": 2378,
+      "share": 0.2026071398142626
+    },
+    {
+      "owner": "computePassEncoderDispatchWorkgroups",
+      "samples": 1586,
+      "share": 0.135128226974525
+    },
+    {
+      "owner": "deviceCreateBindGroup",
+      "samples": 1547,
+      "share": 0.13180540172105307
+    },
+    {
+      "owner": "deviceCreateBuffer",
+      "samples": 822,
+      "share": 0.07003493226548521
+    },
+    {
+      "owner": "computePassEncoderSetBindGroup",
+      "samples": 689,
+      "share": 0.0587032461446707
+    },
+    {
+      "owner": "bufferRelease",
+      "samples": 688,
+      "share": 0.058618045497145777
+    },
+    {
+      "owner": "computePassEncoderSetPipeline",
+      "samples": 550,
+      "share": 0.046860356138706656
+    },
+    {
+      "owner": "commandBufferRelease",
+      "samples": 288,
+      "share": 0.0245377864871773
+    },
+    {
+      "owner": "bufferMapAsync",
+      "samples": 134,
+      "share": 0.01141688676833944
+    },
+    {
+      "owner": "computePipelineGetBindGroupLayout",
+      "samples": 116,
+      "share": 0.009883275112890859
+    },
+    {
+      "owner": "queueWriteBuffer",
+      "samples": 53,
+      "share": 0.004515634318820823
+    },
+    {
+      "owner": "commandEncoderRelease",
+      "samples": 44,
+      "share": 0.0037488284910965324
+    },
+    {
+      "owner": "commandEncoderFinish",
+      "samples": 40,
+      "share": 0.0034080259009968477
+    },
+    {
+      "owner": "deviceCreateCommandEncoder",
+      "samples": 37,
+      "share": 0.003152423958422084
+    },
+    {
+      "owner": "computePassEncoderRelease",
+      "samples": 35,
+      "share": 0.0029820226633722417
+    },
+    {
+      "owner": "commandEncoderCopyBufferToBuffer",
+      "samples": 34,
+      "share": 0.0028968220158473203
+    },
+    {
+      "owner": "computePassEncoderEnd",
+      "samples": 31,
+      "share": 0.002641220073272557
+    },
+    {
+      "owner": "devicePopErrorScope",
+      "samples": 24,
+      "share": 0.0020448155405981086
+    },
+    {
+      "owner": "commandEncoderBeginComputePass",
+      "samples": 15,
+      "share": 0.0012780097128738178
+    },
+    {
+      "owner": "bufferGetSize",
+      "samples": 15,
+      "share": 0.0012780097128738178
+    },
+    {
+      "owner": "bufferAddRef",
+      "samples": 14,
+      "share": 0.0011928090653488966
+    },
+    {
+      "owner": "instanceWaitAny",
+      "samples": 14,
+      "share": 0.0011928090653488966
+    },
+    {
+      "owner": "bindGroupRelease",
+      "samples": 13,
+      "share": 0.0011076084178239754
+    },
+    {
+      "owner": "devicePushErrorScope",
+      "samples": 12,
+      "share": 0.0010224077702990543
+    },
+    {
+      "owner": "bindGroupLayoutRelease",
+      "samples": 12,
+      "share": 0.0010224077702990543
+    },
+    {
+      "owner": "bufferGetMapState",
+      "samples": 9,
+      "share": 0.0007668058277242907
+    },
+    {
+      "owner": "bufferGetUsage",
+      "samples": 8,
+      "share": 0.0006816051801993695
+    },
+    {
+      "owner": "bufferUnmap",
+      "samples": 1,
+      "share": 8.520064752492119e-05
+    }
+  ]
+}

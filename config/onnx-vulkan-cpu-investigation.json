@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "classification": "bounded-vulkan-cpu-attribution",
+  "historicalReport": "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign",
+  "sourcePolicy": "config/onnx-vulkan-campaign.json",
+  "diagnostic": {
+    "clock": "main-thread-cpu",
+    "periodsUs": [1000, 2000],
+    "processPairs": 2,
+    "runsPerProcess": 10000,
+    "warmupRuns": 10,
+    "minimumSamples": 1000,
+    "maximumDroppedSamples": 0,
+    "maximumUnmappedFraction": 0.02,
+    "maximumSamplingCpuRatio": 1.1,
+    "maximumSpanCpuRatio": 1.5,
+    "minimumMainThreadCpuShare": 0.85,
+    "minimumOwnerCpuShare": 0.15
+  },
+  "candidate": {
+    "primaryMetric": "independent-process-median-complete-session-run-process-cpu-ns",
+    "materialGainRatio": 1.1,
+    "minimumLowerConfidenceRatio": 1.1,
+    "maximumPerformanceCorrections": 1,
+    "minimumPredictedGainRatio": 1.1,
+    "processPairs": 8,
+    "runsPerProcess": 100,
+    "warmupRuns": 10,
+    "aaPairs": 4,
+    "maximumAaMedianRatio": 1.05,
+    "confidence": 0.95,
+    "bootstrapResamples": 10000,
+    "bootstrapSeed": 31008,
+    "coldProcessesPerArm": 4,
+    "regressionMaximumRatios": {
+      "warmWallMedian": 1.05,
+      "warmWallP95": 1.05,
+      "coldProcessWall": 1.1,
+      "peakRss": 1.1
+    },
+    "requireMaterialGainAgainst": ["retained-doe", "source-dawn"],
+    "requireIndependentConfirmation": true,
+    "requireUninstrumentedExecution": true
+  },
+  "stopping": {
+    "stopOnCorrectnessOrOwnershipFailure": true,
+    "stopWithoutQualifiedAttribution": true,
+    "stopWithoutPredictedMaterialOpportunity": true,
+    "retainRejectedCandidates": true,
+    "preserveHistoricalDecision": true,
+    "deferred": ["Metal", "D3D12", "browser-switching", "speculative-compiler-optimization"]
+  }
+}

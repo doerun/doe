@@ -1,0 +1,267 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "classification",
+    "historicalReport",
+    "sourcePolicy",
+    "diagnostic",
+    "candidate",
+    "stopping"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "classification": {
+      "const": "bounded-vulkan-cpu-attribution"
+    },
+    "historicalReport": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourcePolicy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clock",
+        "periodsUs",
+        "processPairs",
+        "runsPerProcess",
+        "warmupRuns",
+        "minimumSamples",
+        "maximumDroppedSamples",
+        "maximumUnmappedFraction",
+        "maximumSamplingCpuRatio",
+        "maximumSpanCpuRatio",
+        "minimumMainThreadCpuShare",
+        "minimumOwnerCpuShare"
+      ],
+      "properties": {
+        "clock": {
+          "type": "string",
+          "minLength": 1
+        },
+        "periodsUs": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "processPairs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runsPerProcess": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warmupRuns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimumSamples": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maximumDroppedSamples": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maximumUnmappedFraction": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maximumSamplingCpuRatio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maximumSpanCpuRatio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "minimumMainThreadCpuShare": {
+          "type": "number",
+          "minimum": 0
+        },
+        "minimumOwnerCpuShare": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primaryMetric",
+        "materialGainRatio",
+        "minimumLowerConfidenceRatio",
+        "maximumPerformanceCorrections",
+        "minimumPredictedGainRatio",
+        "processPairs",
+        "runsPerProcess",
+        "warmupRuns",
+        "aaPairs",
+        "maximumAaMedianRatio",
+        "confidence",
+        "bootstrapResamples",
+        "bootstrapSeed",
+        "coldProcessesPerArm",
+        "regressionMaximumRatios",
+        "requireMaterialGainAgainst",
+        "requireIndependentConfirmation",
+        "requireUninstrumentedExecution"
+      ],
+      "properties": {
+        "primaryMetric": {
+          "type": "string",
+          "minLength": 1
+        },
+        "materialGainRatio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "minimumLowerConfidenceRatio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maximumPerformanceCorrections": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimumPredictedGainRatio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "processPairs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runsPerProcess": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warmupRuns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "aaPairs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maximumAaMedianRatio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0
+        },
+        "bootstrapResamples": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bootstrapSeed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coldProcessesPerArm": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "regressionMaximumRatios": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "warmWallMedian",
+            "warmWallP95",
+            "coldProcessWall",
+            "peakRss"
+          ],
+          "properties": {
+            "warmWallMedian": {
+              "type": "number",
+              "minimum": 0
+            },
+            "warmWallP95": {
+              "type": "number",
+              "minimum": 0
+            },
+            "coldProcessWall": {
+              "type": "number",
+              "minimum": 0
+            },
+            "peakRss": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "requireMaterialGainAgainst": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "requireIndependentConfirmation": {
+          "type": "boolean"
+        },
+        "requireUninstrumentedExecution": {
+          "type": "boolean"
+        }
+      }
+    },
+    "stopping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stopOnCorrectnessOrOwnershipFailure",
+        "stopWithoutQualifiedAttribution",
+        "stopWithoutPredictedMaterialOpportunity",
+        "retainRejectedCandidates",
+        "preserveHistoricalDecision",
+        "deferred"
+      ],
+      "properties": {
+        "stopOnCorrectnessOrOwnershipFailure": {
+          "type": "boolean"
+        },
+        "stopWithoutQualifiedAttribution": {
+          "type": "boolean"
+        },
+        "stopWithoutPredictedMaterialOpportunity": {
+          "type": "boolean"
+        },
+        "retainRejectedCandidates": {
+          "type": "boolean"
+        },
+        "preserveHistoricalDecision": {
+          "type": "boolean"
+        },
+        "deferred": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bounded Vulkan CPU attribution policy"
+}

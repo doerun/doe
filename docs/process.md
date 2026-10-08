@@ -15,6 +15,12 @@ Rejected material advantage remains a completed evidence decision, not a release
 speed claim. Both native implementations keep their own preparation and
 synchronization under equivalent application conditions.
 
+The [CPU investigation contract](onnx-vulkan-cpu-investigation.md) adds bounded
+diagnostic sampling and a separate frozen candidate-admission rule. Its semantic
+verifier must replay retained raw populations and the stopping decision alongside
+schema and recovery controls. Diagnostic admission cannot promote a performance
+claim or reopen the completed campaign's decision.
+
 ## Canonical intent contract
 
 Doe does not add a second free-form run-intent field. Executable intent is the

@@ -1,5 +1,22 @@
 # Doe status: runtime backends and benchmarks
 
+## Completed ONNX CPU attribution
+
+The [bounded CPU investigation](../../reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-cpu-attribution/README.md)
+qualifies diagnostic sampling of the existing source-matched SqueezeNet consumer
+on the tested Vulkan host. Independent original-process controls, instrumentation
+overhead, recovery, actual native work and disabling/oracle controls pass.
+Binding creation, compute recording, retirement and common driver work contribute
+to CPU cost. No general correction demonstrates the frozen predicted application
+advantage; the investigation stops without a runtime patch or speed claim.
+
+The [diagnostic contract](../onnx-vulkan-cpu-investigation.md) distinguishes accepted
+call-site sampling from rejected intrusive timing controls and exploratory source
+custody gaps. Timer overruns, candidate-frame uncertainty and stripped symbol
+limitations remain explicit. General callback conformance and submitted-work
+interruption remain open. The completed campaign below retains its original
+negative decision. No successor campaign is active.
+
 ## Independent ONNX integration
 
 The [completed Vulkan campaign](../../reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/README.md)
@@ -16,8 +33,9 @@ The primary gain and CPU regression fail the frozen acceptance rule. Raw warm an
 cold processes, A/A controls and unfavorable results are retained. The corrected
 cache-scoped cohort drives the decision; the earlier HOME-cache mismatch remains
 retained diagnostic evidence. Operator-inclusive
-profiles do not justify a general performance correction; native CPU profiling is
-blocked by host permissions. No performance patch or speed claim is promoted.
+profiles do not justify a general performance correction. The subsequent CPU
+investigation uses permission-preserving user-space sampling; kernel profiling
+remains unavailable under the host policy. No performance patch or speed claim is promoted.
 
 The application supplied a new concrete unchanged-WGSL integer-dot reproduction.
 The general SPIR-V lowering correction passes compiler/runtime and physical
