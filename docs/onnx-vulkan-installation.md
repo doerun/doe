@@ -13,6 +13,34 @@ binds the archive, manifest, reproduction checks and installed execution. The
 qualification settings. See the [producer runbook](../bench/external-projects/onnx-vulkan-release/README.md)
 for archive creation and semantic evidence replay.
 
+## Download the evaluation
+
+The [public distribution](https://github.com/doerun/doe/tree/9c2bd310f07137cdad27d7d55b9ee2b3706eb0ab/reports/releases/20261009-onnx-vulkan-evaluation/publication) contains the exact qualified archive, manifest,
+checksums, installation instructions, supported configuration, limitations, and
+producer evidence. These URLs pin the publication commit; no binary was rebuilt.
+This uses repository hosting, not a GitHub Releases API release. The
+[anonymous download verification](../reports/releases/20261009-onnx-vulkan-evaluation/publication-download-verification.txt)
+records matching bytes for every asset.
+
+From a new consumer directory, download the archive and its companion files:
+
+```bash
+(
+set -e
+pub_base='https://raw.githubusercontent.com/doerun/doe/9c2bd310f07137cdad27d7d55b9ee2b3706eb0ab/reports/releases/20261009-onnx-vulkan-evaluation/publication'
+for pub_file in doe-onnx-vulkan-0.1.0-eval.1-linux-x64.tar.gz SHA256SUMS package-manifest.json OPERATOR.txt; do
+  curl --fail --location "$pub_base/$pub_file" --output "$pub_file"
+done
+sha256sum --check --ignore-missing SHA256SUMS
+)
+```
+
+Require all downloads to succeed and the archive, manifest, and operator handoff
+to pass their checks before extracting code. The
+[operator handoff](https://raw.githubusercontent.com/doerun/doe/9c2bd310f07137cdad27d7d55b9ee2b3706eb0ab/reports/releases/20261009-onnx-vulkan-evaluation/publication/OPERATOR.txt) specifies acceptance, failure retention,
+host dependency reporting, and an independent application's requirement intake.
+Public download verification is separate from another operator's GPU execution.
+
 ## Install and evaluate
 
 Use Linux x86_64, compatible glibc/libstdc++, Python with `hashlib.file_digest`,
@@ -20,17 +48,19 @@ bubblewrap, and an accessible AMD Vulkan adapter and driver. The archive include
 the model and native components. Running it needs no compiler, Python packages,
 checkout or network. Driver and system-library dependencies stay host-owned.
 
-Verify the archive checksum supplied by the release report before extracting
-its bootstrap scripts into a new directory. Then run:
+After verifying the downloaded archive, extract its bootstrap scripts into a new
+directory and install from the same archive:
 
 ```bash
-python3 bootstrap/doe_onnx.py install /path/to/archive.tar.gz \
-  --sha256 EXPECTED_SHA256 --prefix /path/to/doe-onnx-version
-python3 /path/to/doe-onnx-version/doe_onnx.py verify
-python3 /path/to/doe-onnx-version/doe_onnx.py qualify \
-  --out /path/to/new-results
-python3 /path/to/doe-onnx-version/doe_onnx.py run \
-  --out /path/to/new-example-results
+mkdir bootstrap
+tar -xzf doe-onnx-vulkan-0.1.0-eval.1-linux-x64.tar.gz -C bootstrap
+python3 bootstrap/doe_onnx.py install \
+  "$PWD/doe-onnx-vulkan-0.1.0-eval.1-linux-x64.tar.gz" \
+  --sha256 9e469bbb7bbb02a4fcf40844553e873a05b14af2e1466e480b551724e0aec7d2 \
+  --prefix "$PWD/installed"
+python3 installed/doe_onnx.py verify
+python3 installed/doe_onnx.py qualify --out "$PWD/qualification-results"
+python3 installed/doe_onnx.py run --out "$PWD/example-results"
 ```
 
 Installations and results must use new directories. Results belong outside the

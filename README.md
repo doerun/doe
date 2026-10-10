@@ -8,9 +8,11 @@ Start with the [ONNX Vulkan evaluation installation](docs/onnx-vulkan-installati
 It runs pinned ONNX Runtime WebGPU operators through Doe, with unchanged
 SqueezeNet and bounded callback/lifecycle checks. The
 [delivery report](reports/releases/20261009-onnx-vulkan-evaluation/README.md) records
-local isolated installation and actual Doe execution. The archive remains in local
-binary custody; external reproduction, broader compatibility, retained adoption,
-and material replacement advantage remain unestablished. See the guide for host
+local isolated installation and actual Doe execution. The exact archive is now
+[publicly downloadable](docs/onnx-vulkan-installation.md#download-the-evaluation)
+with commit-pinned URLs and verified checksums. External reproduction, broader
+compatibility, retained adoption, and material replacement advantage remain
+unestablished. See the guide for host
 prerequisites, package acquisition, initialization, cleanup, and exclusions.
 
 ![Doe prepares a shader program and binds its data on the selected device, then executes GPU work.](assets/readme/execution.svg)

@@ -10,9 +10,13 @@ controls. Loaded native libraries and shader/submission journals bind actual Doe
 execution. The [installation contract](../onnx-vulkan-installation.md) owns the
 public evaluation boundary; npm and browser surfaces are separate.
 
-External operator reproduction, additional hosts, registry publication and
-voluntary retention remain open. No new performance campaign or application
-advantage is promoted; prior campaign decisions remain preserved.
+The exact archive now has [public repository distribution](../../reports/releases/20261009-onnx-vulkan-evaluation/publication/README.md)
+and [anonymous download verification](../../reports/releases/20261009-onnx-vulkan-evaluation/publication-download-verification.txt).
+This adds public byte custody without rebuilding binaries or changing the original
+local qualification. External operator reproduction, additional hosts and voluntary
+retention remain open. No application advantage is promoted; prior campaign
+verdicts remain preserved. The operator handoff is ready for any eligible external
+consumer; no requirement or successor optimization campaign has been selected.
 
 ## Bounded ONNX Vulkan device lifecycle qualification
 
