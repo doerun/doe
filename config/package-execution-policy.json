@@ -3,7 +3,8 @@
   "ordinaryExecution": {
     "shaderSemantics": "native-compiler",
     "readbackSource": "native-buffer",
-    "hostShaderSubstitution": false
+    "hostShaderSubstitution": false,
+    "queueCompletionAfterDestroy": "settle-prior-completion-without-native-access"
   },
   "writeBatching": [
     {

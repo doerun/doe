@@ -843,6 +843,7 @@ function createFullSurfaceClasses({
       this._native = native;
       this._instance = instance;
       this._device = device;
+      this._submittedWorkDone = null;
       this.label = '';
       initResource(this, 'GPUQueue', device);
       if (backend.initQueueState) {
@@ -936,12 +937,18 @@ function createFullSurfaceClasses({
     }
 
     async onSubmittedWorkDone() {
+      if (this._device?._destroyed) {
+        await this._submittedWorkDone;
+        return;
+      }
       const native = assertLiveResource(this, 'GPUQueue.onSubmittedWorkDone', 'GPUQueue');
       if (!this.hasPendingSubmissions()) {
         return;
       }
-      await backend.queueOnSubmittedWorkDone(this, native);
-      this.markSubmittedWorkDone();
+      const completion = backend.queueOnSubmittedWorkDone(this, native);
+      this._submittedWorkDone = completion;
+      await completion;
+      if (!this._device?._destroyed) this.markSubmittedWorkDone();
     }
 
     copyExternalImageToTexture(source, destination, copySize) {

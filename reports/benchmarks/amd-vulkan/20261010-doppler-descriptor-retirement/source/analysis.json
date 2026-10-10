@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "seed": 20261004,
+  "bootstrapSamples": 20000,
+  "confidence": 0.95,
+  "controlEstimator": "Process-paired geometric B/A ratio, balanced order; both confidence bounds must be inside the contract control band.",
+  "applicationEstimator": "Per-provider initial rows and balanced resident A/B rows; interpolated median and p95, with each process preserved as an independent block.",
+  "admission": "Correctness and cancellation before timing; complete-generation control stability is required for a complete-generation candidate, first-token control stability for a first-token candidate. No outcome-selected retries."
+}

@@ -5,13 +5,17 @@
 The [current-source mapping repair](../../reports/maintenance/20261010-doppler-map-callbacks/README.md)
 restores synchronous host readback after deferred callback delivery. Frozen Doppler
 generation cases, cancellation/reuse and native rendering/command lifetime checks
-pass on the tested Vulkan host. A pre-existing Doppler deferred-destruction warning
-remains visible during unload; do not promote fully settled application cleanup.
+pass on the tested Vulkan host. The subsequent [queue-completion correction](../../reports/maintenance/20261010-queue-completion/README.md)
+fixes a host rejection during Doppler's device-loss cleanup. Unchanged generation
+and cancellation/reuse pass without the prior deferred-destruction warning;
+arbitrary driver loss and full application leak qualification remain separate.
 
-Doppler is the first engineering customer. The next performance selection must
-attribute dominant complete-generation costs before changing the compiler or
-runtime. Buffer creation/destruction and submission appear in diagnostic profiles;
-no speed advantage or new optimization acceptance is established. External
+Doppler is the first engineering customer. The [descriptor-retirement candidate](../../reports/benchmarks/amd-vulkan/20261010-doppler-descriptor-retirement/README.md)
+is rejected: baseline stability and material complete-generation admission failed.
+Its patch is archived and the prior Vulkan implementation remains active. API
+destruction cost did not translate into an accepted algorithmic gain. The next
+selection must distinguish native allocation/driver work from descriptor scanning
+before changing another mechanism; no successor experiment is selected. External
 recruitment is separate adoption work, not an engineering gate. Closed reuse
 experiments stay closed and Vulkan remains the active backend.
 

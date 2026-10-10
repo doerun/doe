@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 1,
+  "dopplerModule": "/home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/index.js",
+  "dopplerArchive": "/home/x/deco/doe/bench/out/doppler-generation/20261004/doppler-gpu-0.6.3-dev.split.10.tgz",
+  "doeModule": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute.js",
+  "doeLibrary": "/home/x/deco/doe/bench/out/doppler-generation/20261010-diagnosis/fixed-build/lib/libwebgpu_doe.so",
+  "dawnModule": "/home/x/deco/doe/bench/out/doppler-generation/20261004/installed/dawn/index.js",
+  "archives": [
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261004/doppler-gpu-0.6.3-dev.split.10.tgz",
+      "sha256": "f4d75e2b34b54b534ce59e036a0bc64792639f47472b2890f182ca1e68458fd1"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261004/webgpu-0.4.0.tgz",
+      "sha256": "d8835c95790d7d34299283619568f4cce97b4358581d9e2b56e7f63e3a86e062"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261004/doe-source-bound-provider.tgz",
+      "sha256": "f9eca989472d84db9b35c7d3f2cabe7e3749e831e18a81c4ffdc67fa2b6530e4"
+    }
+  ],
+  "dopplerDependencyClosure": "Installed Doppler archive uses the source checkout node_modules via explicit symlink; not isolated dependency closure. package-lock digest is bound below.",
+  "dopplerDependencyLockSha256": "2f91b144117a7319fb05d07a31382f0432f0b4d682d1f9ef73abfca1f39d2b68",
+  "nativeBuildMetadata": {
+    "sourceCommit": "acd45ecd2",
+    "build": "zig build dropin -Doptimize=ReleaseFast",
+    "note": "Unchanged repaired native library; current queue-completion host correction only. Pre-correction archive retained as historical custody, not executed host identity."
+  },
+  "files": [
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261004/installed/dawn/dist/linux-x64.dawn.node",
+      "sha256": "fbfe599055b469963e4c9bfc900a702843db962dcaba0799b3c81ae33fa43db1"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-diagnosis/fixed-build/lib/libwebgpu_doe.so",
+      "sha256": "083edc11818c7b09cb22c17a8cbe9596dcf5baadfac4cfba7eef7471ddd607c1"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/package.json",
+      "sha256": "bf79fe07e5882a0f66f506e3aae5a6f630805bbb26887d278c475f116ce6b545"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute-program-native.js",
+      "sha256": "1b05dc4b0f638522a9117dcda484885ddaf4da572e96c65f54d2a001997e8562"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/json-canonical.js",
+      "sha256": "f01cf139a212e956b4166785fb88ef1e529577445dceb06d15cd3a5a4b87966c"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/index.js",
+      "sha256": "dd74834f48d1659011fc5cec7428ed19d55db8ff4cb39bcb44263d3053228955"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/plan-validation.js",
+      "sha256": "87f297b26464a8d2b136e7a5ea8942c5bbf27cb9714a183ccd53f5b0d8464676"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/browser-compiler-worker.js",
+      "sha256": "0b49340bf6a402258d51a46ba05b14e2ead32bb5df53814243e047216024cf4d"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/browser.js",
+      "sha256": "078efcbbfc0af4ff132b5b06c6eef40f55442c921cf9ffe98318e2cfdb5fa52c"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/bun.js",
+      "sha256": "30621da31c80883b525280f2ae22177bc14aa3d701260f14a44f50c28aee4e1a"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/node-webgpu.d.ts",
+      "sha256": "9ab69792e995e343a00a8ef662d6867a0d6a5726640e3e4455b3e130c75a47f3"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/api.js",
+      "sha256": "928a55e9f1b441c785fe38c242741d7cd8372aa10a0b0077a74151c519249475"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute-program-completion.js",
+      "sha256": "22ed8e1b8a94957122b7ad294ae57d4ada37ebd38f1d5a1d5e6ba525c5dbfeda"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/plan.d.ts",
+      "sha256": "e99a215359bb4f6ca87ead92f0189e606f0c2c748895b39f8866171b7361b926"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/hybrid.d.ts",
+      "sha256": "fcaaf65bb38e159fa97379c5f67fe3828c6df233072feed1be73ef114664443c"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/hybrid.js",
+      "sha256": "23327feaf5892a3a695650ab104c74db722bb14df1566a44034896693418d146"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/browser.d.ts",
+      "sha256": "aca6aec22258b30f57f8792e8af081a2807f8dba5fad3ab865c59706af233d0e"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/node-webgpu-loader.js",
+      "sha256": "0f3352a35be4f2e92f185fa6cae119ee0c973f6fca0d82c112b6dd4c321562c4"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/native.js",
+      "sha256": "5682654b4400f326b00e28051585677237d032200307473db79c7c7b2b983a31"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/plan-contracts.js",
+      "sha256": "f3d2cade9a4988137f8e2923c9a405c581ff5618af7a1f07b7e473124c5cecfb"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/node-webgpu-process.js",
+      "sha256": "46af9b8152e2389c0fce88385f1e2da94c529ec55d2b9c0de09b7e5c4dc1f141"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/browser-compiler.d.ts",
+      "sha256": "08486cb35bb59f601f5f4220c8f1ff0cb97bee55fb64326eb59be35641e0b419"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/native.d.ts",
+      "sha256": "95bf7c19205d7a4c92f1699dae58e217bb18f324276dfe06b1c2e312c7c75cf2"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/node-webgpu.js",
+      "sha256": "171a4b0894f1f352dfabd9a230e873c5f90da64b54bc2b5aa3026e59bb17d85e"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute-program-timing.js",
+      "sha256": "835c46bcf7788e794a6949d7b4d7a48c3b9934c159f3fd3f54ec357a4a357ef5"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/program-bundle-runner.d.ts",
+      "sha256": "5e293799c49a0f850ae843de291a8babc58a120804c7e1bcc5a5c5cd2bcf88c6"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/capture-provider.js",
+      "sha256": "08b42dc348ca3c98a422640047d3921345852c4f1543a78858a44aecb6d1c9d8"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/browser-compiler-artifact.js",
+      "sha256": "11cd017a8dcad321ad6421ab77dc3be6c8695a4e9c3ad0d66f8de9679ee2e149"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/observe.js",
+      "sha256": "1e90562479e8e55be2890d20e3fae70fcffc53f3dfbb6e3f56f33a8253130d95"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/node-process-termination.js",
+      "sha256": "010b5fbc50d05dffd6de825f530724ca695c08ad5e4402a3ec4c2d5dbcbe15e9"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/browser-compiler.js",
+      "sha256": "9d626fa85ca577a550e2ceef5074c2ea67531ac9153da4927badb2527f77473e"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/browser-compiler-cache.js",
+      "sha256": "cb1854cdcb0c93b08f0aca52d10a35124dbcb13eaef0cd1c849ff1287f5d4adb"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/plan.js",
+      "sha256": "fd36fdaeef58a8636dc237534585fdea9fe748b8b797e4b0eb435770b7739b73"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute-program.js",
+      "sha256": "0502b087cc65fd6c253ab3ed1768a7c8fd5e6eba1024a71f6104f221e443167d"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute.d.ts",
+      "sha256": "1fc27b702b3f95246526b1f0d4bedaea07ab71b19505241801b4860aa308fdfe"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/capture.js",
+      "sha256": "cdd57502a07ed94b1daa2c6b1996edda1c161f44a4827b2e0364dd8c6bac6e1a"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/index.d.ts",
+      "sha256": "60cfb96a466f57b68c3964946c9fca43ebdc8471fb19a80f0e73cb77bd6320e9"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/api.d.ts",
+      "sha256": "553f3ff0ca62aff015922e8d62313534b964c935462112cf0ce7706442e98bb5"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute.js",
+      "sha256": "f0c7e4c93097a4960e91034f0a56f399ed702a250cf1bf38fb2afb5565b651a7"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute-program-residency.js",
+      "sha256": "106ad21cff9695d747154e1d4cef23bc9beae6900f95cfbc350a4f31f2ed64cc"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/node-process-requests.js",
+      "sha256": "a69e74d9c1622097c93d9719543775ca28c3555d1a9cd619b71d556148fed473"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute-program.d.ts",
+      "sha256": "8951e0e98ab93982274ee1dc19bff0cdfd81316557b9660f6182fa7d18bc0094"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/capture.d.ts",
+      "sha256": "1ef9743084acec23321016e80f5fcbd01a848df3b0202a96d8662e2f66696e9d"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/node-webgpu-process.d.ts",
+      "sha256": "d878cae316a0728259dda54400cb30da33b87c3c1d81ec3de7dd01021f8eec5c"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/node-webgpu-process-cli.js",
+      "sha256": "3ef27be655a6e5197359b18b5a29dd86db19c2f2c0afd0aca3c18910d9afd9c3"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/deno.js",
+      "sha256": "30dd78110fd2c17fac9d7adcdb9613aa4395ad14b461e2d4310e7791f6419a1a"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/observe.d.ts",
+      "sha256": "a9f66494d96bf43a9644106e55b14a130e7e31b025853834afb6d9abd78f990e"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute-program-contract.js",
+      "sha256": "0558bd1c0ce49f5eb5220f1a29f391746585ef6f5a52131f11ec90f44d21f147"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/program-bundle-runner.js",
+      "sha256": "1273e1f3a8f635148fc4e7c2994c218f133577741e04c850f8f95d9bc26fc5c0"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/compute-program-update.js",
+      "sha256": "be87b9099040da98c5e165bcd123f878a57c9915411a0bd7335e78c7c3895ade"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/doe-numeric-stability-policy.js",
+      "sha256": "a3dc4008ef0a8730c99227e17a462242a9d4c5e4a5cd52a48312be28125f5619"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/doe-namespace.d.ts",
+      "sha256": "808d332bd95669701173865d991281acb729a8de9d0d316843edea2a40ccdb64"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/doe-namespace.js",
+      "sha256": "e53155a8523ebfad985633dabaaedd3b90c1c7f607b21c772db167da380203b7"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/doe-determinism-policy.js",
+      "sha256": "e82f370a7dc5967e2ce84fc9420767bf15dc90de8a46f6064af0fd9da1aa3432"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/index.js",
+      "sha256": "2e7450fb843ffd809499298c872beb75ce0f7620a8d1e223cdf9a9918f21e78c"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/build-metadata.js",
+      "sha256": "a1a45aba32160c7cf7b5cd54917b97e61e4276d6092c199a2ad0b5876f41805f"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/browser.js",
+      "sha256": "e5c0ad87185f061d7c2c38d1da0e6bcc46956bbf938fdd741d7c1ddb5cc22101"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/bun.js",
+      "sha256": "dbe7ccb83f5c2b90d127196a3e355ab84617c3d807353f76ceb57679630cd3c1"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/webgpu-constants.js",
+      "sha256": "5656bde675c477438768436adfa25e748ea17f1dd9d6595172f76c1291bd0137"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/bun-ffi.js",
+      "sha256": "1d7962cf819b7eff3bfa9130dacc31b52232e34c424d6e702fd28730901a2112"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/platform-package.js",
+      "sha256": "2e022fc19bf25833d98d454ff9bbf386a507050849c54a1f48013a7ddfb6a8ff"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/runtime-cli.js",
+      "sha256": "cac9bc7723781e0853315318633c360738ae0db163b5afb0eddf285eca95b694"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/full.js",
+      "sha256": "6e19bb08dc7c089e4def2cda3b851dd7e78924912ee5bde6abbe00a9759dc864"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/compute.js",
+      "sha256": "4bb1c37b9f29652756fc19c41eb105e0a0033adcbcae25a1c4e9d6f423af3982"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/shared/encoder-surface.js",
+      "sha256": "060150abb33042e5c43a9cdf768dcb8de497248988d3237433011a70cc291e5a"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/shared/native-metal-canvas-backend.js",
+      "sha256": "2660a21d3bd2c5423e26708275d13fe9d1502f5bc3ac4068f26e5475a93b0e59"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/shared/full-surface.js",
+      "sha256": "f1f207238b258197db9d864eeb549df46f9dee47361f296373df8744c73f597f"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/shared/browser-surface.js",
+      "sha256": "1ea080ff356ee26a781c7c43c7bbe588672da92b305c95478b6a4999c737abda"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/shared/resource-lifecycle.js",
+      "sha256": "e3f49653aade60a421162ea012d6285944d161791d9ae8a3618e5b70dc86fe82"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/shared/compiler-errors.js",
+      "sha256": "5bf961f13b59f43c2ba210d1925dc4742f0de46b7944409b9557439bd247fb16"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/shared/capabilities.js",
+      "sha256": "1c0ad34270f92c54730648e7dcd9feac396961c310d387ed6796aa996b1b7b8d"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/shared/validation.js",
+      "sha256": "ea534f05b6fb5e8578ef0d2a7bb59e953e87b43efdee4d9860d4b2f5f3db18ef"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/shared/browser-native-canvas-backend.js",
+      "sha256": "fd2a71881bd2003bbb539b237df7636eeeded6bdb533f10cc2fe2a99e56c953f"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/src/vendor/webgpu/shared/public-surface.js",
+      "sha256": "02c756994a523ffb6e00d2563e71800dd9cda8d4a1ed82444b23ff64b5a54920"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/cleanup/provider/build/Release/doe_napi.node",
+      "sha256": "cbe13a939ae6a72f7ae28a9dba1bbb901b8cef4e90a29da80f1fa90feb863786"
+    }
+  ]
+}

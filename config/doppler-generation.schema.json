@@ -5,6 +5,7 @@
     {"$ref": "#/$defs/contract"},
     {"$ref": "#/$defs/analysis"},
     {"$ref": "#/$defs/candidate"},
+    {"$ref": "#/$defs/retirementCandidate"},
     {"$ref": "#/$defs/providers"},
     {"$ref": "#/$defs/reference"},
     {"$ref": "#/$defs/summary"},
@@ -15,6 +16,67 @@
     {"$ref": "#/$defs/cohort"}
   ],
   "$defs": {
+    "retirementCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "candidateId",
+        "owner",
+        "hypothesis",
+        "primaryMetric",
+        "minimumBaselineGainRatio",
+        "incumbentAmbitionRatio",
+        "maximumTailRegressionRatio",
+        "maximumMemoryRegressionRatio",
+        "maximumControlRatio",
+        "acceptance",
+        "ownership"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "candidateId": {
+          "const": "batched-buffer-descriptor-retirement-v1"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "hypothesis": {
+          "type": "string"
+        },
+        "primaryMetric": {
+          "const": "resident completeMs p50"
+        },
+        "minimumBaselineGainRatio": {
+          "type": "number",
+          "exclusiveMinimum": 1
+        },
+        "incumbentAmbitionRatio": {
+          "type": "number",
+          "exclusiveMinimum": 1
+        },
+        "maximumTailRegressionRatio": {
+          "type": "number",
+          "minimum": 1
+        },
+        "maximumMemoryRegressionRatio": {
+          "type": "number",
+          "minimum": 1
+        },
+        "maximumControlRatio": {
+          "type": "number",
+          "minimum": 1
+        },
+        "acceptance": {
+          "type": "string"
+        },
+        "ownership": {
+          "type": "string"
+        }
+      }
+    },
     "contract": {
       "type": "object",
       "additionalProperties": false,
@@ -492,6 +554,7 @@
         "contractSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "baselineSummarySha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "candidateSummarySha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "candidatePolicySha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "primaryGainRatio": {"type": "number"},
         "ratios": {
           "type": "array",

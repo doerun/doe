@@ -1,0 +1,20 @@
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ '87d2d29c1bc1a5eb89b3a0e2673d861a39e4bb5c6f5863d10b38aef67678d9f0'
+- 'fae9ba6101ee8001a3739c66e269843ec2f4cdefb8320166beba78a013c63570'
+
+    at file:///home/x/deco/doe/bench/external-projects/doppler-generation/run-generation.mjs:23:12 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: '87d2d29c1bc1a5eb89b3a0e2673d861a39e4bb5c6f5863d10b38aef67678d9f0',
+  expected: 'fae9ba6101ee8001a3739c66e269843ec2f4cdefb8320166beba78a013c63570',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.1

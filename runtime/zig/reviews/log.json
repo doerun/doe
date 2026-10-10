@@ -28005,6 +28005,35 @@
       "targets": [
         "src/dropin/dropin_abi_procs.zig"
       ]
+    },
+    {
+      "context": [],
+      "evidence": [
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261010-doppler-descriptor-retirement/disposition.json",
+          "sha256": "da1b7f82a10b86753e17f049afdc4ac29294e28d0784a71604d01c8864aa297d"
+        },
+        {
+          "path": "reports/benchmarks/amd-vulkan/20261010-doppler-descriptor-retirement/manifest.json",
+          "sha256": "344ad50c03cf69938c9df9095eac95fa386ffa390f77cb514851cef7ea607a51"
+        }
+      ],
+      "findings": [],
+      "inputHash": "46f7d65ae20455e2f7327eeee2178d890a61fb33bc4d64d2e30c7249442fe4d6",
+      "level": "file",
+      "nextAction": "Keep the rejected patch archived. Before another performance selection, distinguish allocation/driver work from descriptor scanning on the repaired host; do not reopen buffer reuse or select a successor automatically. Complete the remaining whole-file examination separately.",
+      "prerequisites": [],
+      "resolvedFindings": [],
+      "reviewId": "20261010_vulkan_descriptor_retirement_rejected",
+      "reviewedAt": "2026-10-10T03:23:57.636423+00:00",
+      "reviewer": "codex-descriptor-retirement",
+      "sourceCommit": "1e298f267e3d5e8fad6db45ef81036ce669ab7f9",
+      "status": "in_progress",
+      "summary": "Scoped descriptor-retirement algorithm experiment completed and rejected; original source restored. Generation, buffer replacement and runtime regressions passed, but baseline first-token control and material complete-generation admission failed. This does not complete a whole-file review.",
+      "supersedes": "vulkan_submission_vk_pipeline_cache_20261004_custody",
+      "targets": [
+        "src/backend/vulkan/vk_pipeline_cache.zig"
+      ]
     }
   ],
   "schemaVersion": 1

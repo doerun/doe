@@ -1,0 +1,19 @@
+{"cohort":"candidate","lane":"dawn","processIndex":0,"code":1,"signal":null}
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Failed process /home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/candidate-dawn-0.json; stop without timing promotion
+
+1 !== 0
+
+    at file:///home/x/deco/doe/bench/external-projects/doppler-generation/run-cohort.mjs:30:12 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 1,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.1

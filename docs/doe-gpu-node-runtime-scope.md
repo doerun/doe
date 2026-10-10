@@ -39,6 +39,23 @@ checked with `spirv-val` in addition to numerical application tests.
 
 ## Provider v1
 
+### Completion after explicit destruction
+
+The package execution policy's `ordinaryExecution.queueCompletionAfterDestroy`
+requires the host queue to settle prior completion without accessing released
+native objects. `onSubmittedWorkDone()` after explicit device destruction waits
+for an already requested completion, or resolves when none exists. A completion
+that resumes after destruction skips native bookkeeping. New submissions remain
+invalid, and live-device completion failures still propagate. This correction
+adds a fixed contract field within policy version 2, not a selectable mode.
+
+The [queue cleanup report](../reports/maintenance/20261010-queue-completion/README.md)
+retains failure, unit ordering checks, physical Vulkan checks and unchanged
+Doppler generation. It does not qualify arbitrary driver loss or every pending
+callback ordering.
+
+### Opening a provider
+
 Import the provider contract from `doe-gpu/node-webgpu`:
 
 ```js

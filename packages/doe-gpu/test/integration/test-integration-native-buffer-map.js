@@ -67,4 +67,21 @@ try {
     adapter.destroy();
   }
 }
-console.log('ok: mapping callbacks settle, reject invalid usage, recover, and preserve readback bytes');
+{
+  const adapter = await requestAdapter({ backend: process.platform === 'darwin' ? 'metal' : 'vulkan' });
+  const device = await adapter.requestDevice();
+  const queue = device.queue;
+  const encoder = device.createCommandEncoder();
+  queue.submit([encoder.finish()]);
+  const pending = queue.onSubmittedWorkDone();
+  device.destroy();
+  try {
+    await pending;
+    await queue.onSubmittedWorkDone();
+    await queue.onSubmittedWorkDone();
+    assert.throws(() => queue.submit([]), /destroyed/);
+  } finally {
+    adapter.destroy();
+  }
+}
+console.log('ok: mapping callbacks, invalid usage recovery, readback bytes, and completion across device destruction');

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "candidateId": "batched-buffer-descriptor-retirement-v1",
+  "owner": "runtime/zig/src/backend/vulkan/vk_pipeline_cache.zig",
+  "hypothesis": "Sweep invalidated cached buffer descriptors once before subsequent descriptor preparation instead of scanning every compute state for every destroyed buffer. Live buffer generations remain authoritative; physical buffer release and completion waits stay unchanged.",
+  "primaryMetric": "resident completeMs p50",
+  "minimumBaselineGainRatio": 1.1,
+  "incumbentAmbitionRatio": 1.25,
+  "maximumTailRegressionRatio": 1.05,
+  "maximumMemoryRegressionRatio": 1.05,
+  "maximumControlRatio": 1.05,
+  "acceptance": "Use the existing unchanged-generation contract, independent CPU oracle and eight-process balanced uninstrumented cohorts. Require complete-generation and first-token controls, initial/resident tail bounds, host RSS bounds, mapping/command/rendering regressions and unrelated ONNX execution. Compare against repaired Doe for incremental admission and Dawn separately; this cannot establish the incumbent ambition unless independently met. Retain failures without outcome-selected reruns.",
+  "ownership": "The live allocation registry and generations invalidate descriptors. Destroy waits for submitted work and physically releases the buffer as before. Retired descriptor metadata/pools survive until the next descriptor preparation or runtime teardown, with no new allocations, no buffer reuse changes and no growth beyond already owned descriptor state."
+}

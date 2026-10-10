@@ -1,0 +1,1088 @@
+{
+  "schemaVersion": 1,
+  "classification": "diagnostic",
+  "doeSourceCommit": "1e298f267e3d5e8fad6db45ef81036ce669ab7f9",
+  "dopplerSourceCommit": "3e31ce60fbab709e9f7d9bb2eaa9c33e5ce6f196",
+  "dawnNpmGitHead": "2f5fb632d9d9db9bcb3705bd868de69a6a2ae4e2",
+  "dawnNpmIntegrity": "sha512-F5pimn3Aoi0zWjuRdiVs5TnrUwSzD2lESBohsIUsqyitWkGRQlXU2fhV6ycXlQTa1bvAf3sjqiUpBEpmSQ5ptA==",
+  "dawnBuildScope": "Pinned published npm native binary bound to npm gitHead and binary digest; not independently source-built. No runtime-ownership or performance promotion.",
+  "hardware": {
+    "gpu": "AMD Radeon 8060S Graphics (RADV STRIX_HALO)",
+    "driver": "Mesa 26.0.3-1ubuntu1",
+    "backend": "vulkan",
+    "node": "v22.22.1",
+    "zig": "0.15.2"
+  },
+  "archives": [
+    {
+      "path": "bench/out/doppler-generation/20261004/doppler-gpu-0.6.3-dev.split.10.tgz",
+      "sha256": "f4d75e2b34b54b534ce59e036a0bc64792639f47472b2890f182ca1e68458fd1",
+      "bytes": 2189959,
+      "custody": "local-ignored-not-published"
+    },
+    {
+      "path": "bench/out/doppler-generation/20261004/webgpu-0.4.0.tgz",
+      "sha256": "d8835c95790d7d34299283619568f4cce97b4358581d9e2b56e7f63e3a86e062",
+      "bytes": 24756122,
+      "custody": "local-ignored-not-published"
+    },
+    {
+      "path": "bench/out/doppler-generation/20261004/doe-source-bound-provider.tgz",
+      "sha256": "f9eca989472d84db9b35c7d3f2cabe7e3749e831e18a81c4ffdc67fa2b6530e4",
+      "bytes": 3599070,
+      "custody": "local-ignored-not-published"
+    },
+    {
+      "path": "bench/out/doppler-generation/20261004/oracle-wheels/gguf-0.19.0-py3-none-any.whl",
+      "sha256": "70bcd10edfe697fb2dad6e40af2234b9d8ece9a41a99761405121ebda1c3c1cd",
+      "bytes": 118475,
+      "custody": "local-ignored-not-published"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-diagnosis/fixed-build/lib/libwebgpu_doe.so",
+      "bytes": 12036944,
+      "sha256": "083edc11818c7b09cb22c17a8cbe9596dcf5baadfac4cfba7eef7471ddd607c1",
+      "custody": "local-ignored-qualified-native-library"
+    },
+    {
+      "path": "/home/x/deco/doe/bench/out/doppler-generation/20261010-retirement/candidate-build/lib/libwebgpu_doe.so",
+      "bytes": 12036968,
+      "sha256": "136b5c047d5e1eeea226fcfd1076bf564afd1ba587b3160d00f285cace2480dc",
+      "custody": "local-ignored-qualified-native-library"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "providers.json",
+      "sha256": "87d2d29c1bc1a5eb89b3a0e2673d861a39e4bb5c6f5863d10b38aef67678d9f0",
+      "bytes": 18242,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/providers.json",
+      "schemaDefinition": "providers"
+    },
+    {
+      "path": "baseline-summary.json",
+      "sha256": "ea49196a724c9a0feea205fd3b54944a8f32c54e3e86e5376710e02dbefc0f7c",
+      "bytes": 4108,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-summary.json",
+      "schemaDefinition": "summary"
+    },
+    {
+      "path": "candidate-summary.json",
+      "sha256": "5338cac3ec6f131bf40444181be5a255bfd1be828abacae24c683d09da8d9172",
+      "bytes": 4084,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate-summary.json",
+      "schemaDefinition": "summary"
+    },
+    {
+      "path": "disposition.json",
+      "sha256": "da1b7f82a10b86753e17f049afdc4ac29294e28d0784a71604d01c8864aa297d",
+      "bytes": 4262,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/disposition.json",
+      "schemaDefinition": "decision"
+    },
+    {
+      "path": "attribution.json",
+      "sha256": "d883b054a16d2479fec2045471beacd17bf2e81c6c6f9dc79ad1b3ea59dad1d2",
+      "bytes": 21312,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/attribution.json",
+      "schemaDefinition": "attribution"
+    },
+    {
+      "path": "candidate.patch.gz",
+      "sha256": "118ef14980d4cb587bf9b4c1c5db1a12852c3e7968b38bcdddf186b63d5505da",
+      "bytes": 3616,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate.patch.gz",
+      "schemaDefinition": null
+    },
+    {
+      "path": "candidate-providers.json",
+      "sha256": "fae9ba6101ee8001a3739c66e269843ec2f4cdefb8320166beba78a013c63570",
+      "bytes": 18239,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/providers.json",
+      "schemaDefinition": "providers"
+    },
+    {
+      "path": "reference.json",
+      "sha256": "c71da2db7a01a87f714446b68eb5eb1550b478f97784e9cba580f05b287dc546",
+      "bytes": 3643,
+      "sourcePath": "reports/benchmarks/amd-vulkan/20261004-doppler-generation/reference.json",
+      "schemaDefinition": "reference"
+    },
+    {
+      "path": "retirement-candidate.json",
+      "sha256": "a81106e5d9acd28edeb96ec43f7badbda4c9a088c4b82c1812be810d95b7cedb",
+      "bytes": 1535,
+      "sourcePath": "bench/external-projects/doppler-generation/retirement-candidate.json",
+      "schemaDefinition": "retirementCandidate"
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-0.json.gz",
+      "sha256": "841f950cd969fa4d2e4be8f821d1a3c5d0311b0f3aaf9446e1200e689d486f6f",
+      "bytes": 9851,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-0.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-1.json.gz",
+      "sha256": "3d4dd5826feed70ce572872623fef6070711a0344dc331f35914eb51705fcbbd",
+      "bytes": 9808,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-1.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-2.json.gz",
+      "sha256": "e94b01bb4c912d2145283ff635284b618d31e06980c853e62f52e7969e2a5413",
+      "bytes": 9834,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-2.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-3.json.gz",
+      "sha256": "65cbaeb059ad98ebe3e6550ddad712e92c4327f2b0bc97478cefe3560b62a39c",
+      "bytes": 9806,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-3.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-4.json.gz",
+      "sha256": "b10d6a7a44247cae5d854824147b7782f03138b992bfa3ce9aca87e0f15fedd4",
+      "bytes": 9839,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-4.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-5.json.gz",
+      "sha256": "98c954fa50b169011242d13ee6f608824d9e220e526363f2c29d95a8acbdfa7a",
+      "bytes": 9827,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-5.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-6.json.gz",
+      "sha256": "d1122599c4d81658ef52a3e5bd7552e19103e3c10dfbd64e1893cd5040e37f70",
+      "bytes": 9874,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-6.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-7.json.gz",
+      "sha256": "ef008a944ae5c3787bc8eb3140e6f1e889cdf0c293c802bcd632112ff6193631",
+      "bytes": 9827,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-7.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-doe-0.json.gz",
+      "sha256": "42f09638fc025e256543cd2d5a7c79909089edacbaa20dcae7204992fd6ca8cc",
+      "bytes": 10193,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-0.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-doe-1.json.gz",
+      "sha256": "3fd5f01f793e9642a5b081990bf1de1a87c0d764c6eb76a39a9c72fe009f7dfa",
+      "bytes": 10147,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-1.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-doe-2.json.gz",
+      "sha256": "c4fd8f6ac4a04ac309c0650fa439e775018fd2f31e162d859a596cea8c9efbc2",
+      "bytes": 10213,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-2.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-doe-3.json.gz",
+      "sha256": "c05f945c4692b4a20d4cb5367134e171655b2b6d467c73db5520eb8d5f86d75c",
+      "bytes": 10213,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-3.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-doe-4.json.gz",
+      "sha256": "c57b5d37bb57b55775d896d818bdcc87cc0fe0eb8e801368a0ed5dd403dd07ed",
+      "bytes": 10194,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-4.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-doe-5.json.gz",
+      "sha256": "35bb70c7f94aa9f669d1e0005f07d8eb90e7a58e42b4fb4c95187c00cb7d1df0",
+      "bytes": 10189,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-5.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-doe-6.json.gz",
+      "sha256": "ca5d1b1e149326e4c6d711cd4fe2d9e1ff1ef65ab28c49464d979c6d8abe05c6",
+      "bytes": 10171,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-6.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-doe-7.json.gz",
+      "sha256": "bbffb0a52a40187163f28ec3b1262184fc461f78d8b23fc910ee1babd30f41a2",
+      "bytes": 10222,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-7.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/baseline-processes.json.gz",
+      "sha256": "91355eab8481ae860f56e508f01e68ca77f4c8ebcf2792c2412897b2e9e920e0",
+      "bytes": 262,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-processes.json",
+      "schemaDefinition": "cohort"
+    },
+    {
+      "path": "raw/baseline/baseline-analysis.log.gz",
+      "sha256": "fcd66f466d4781b8e63333d5d082eda23c07da375a1d7199f9c565d0db669b84",
+      "bytes": 607,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-analysis.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-cohort.log.gz",
+      "sha256": "0e85cf10da12686be66420a035243aff91f9331670b61f4a5891f538d110eb4f",
+      "bytes": 143,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-cohort.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-0.stderr.log.gz",
+      "sha256": "1f08dd76f944b9f3289864bd14c31f3ebb65fa9ae24ced94b33a7927e9797f9d",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-0.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-0.stdout.log.gz",
+      "sha256": "21864fe1a230c44bb2e2d637923428682bf8412877562391b0fadd08b12ada50",
+      "bytes": 1755,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-0.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-1.stderr.log.gz",
+      "sha256": "8617bdea513e0058daa650fd60ecec61f4aa8e48ed6db85a7b3399aae830f586",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-1.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-1.stdout.log.gz",
+      "sha256": "f1d58907d1c24ddff16ac7b77ab08a74e2fd03075358457d8081e07956b65992",
+      "bytes": 1747,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-1.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-2.stderr.log.gz",
+      "sha256": "1a4bd0d4eb6578ac538d39235089e447b42dd2fe990a18ce4b90431befb864e8",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-2.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-2.stdout.log.gz",
+      "sha256": "d2874ed1816985954d96be078489d1bcc0219f1f4abc0721144fef9665190025",
+      "bytes": 1742,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-2.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-3.stderr.log.gz",
+      "sha256": "2ae2ec020b36dd291b1992627c4a7d902d64818753e8fcce5f27b37025c40da2",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-3.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-3.stdout.log.gz",
+      "sha256": "5731be00252d66fccf3c3db69b3849ecfbeb7a585473cfd82346116bf1fda0dd",
+      "bytes": 1741,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-3.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-4.stderr.log.gz",
+      "sha256": "aef1fc1410900f1152244188d661643933ab64c44906ff00a87cf111bfa6e1e6",
+      "bytes": 238,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-4.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-4.stdout.log.gz",
+      "sha256": "83c617c61957a7375279ebfc0327fa5485c0a099783e8192260854975fe81006",
+      "bytes": 1752,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-4.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-5.stderr.log.gz",
+      "sha256": "af93b9923f7c355ee94c91a1271d49f33d6d724332cb67f41d113faee7c6d67b",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-5.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-5.stdout.log.gz",
+      "sha256": "2eb3095c367750eca444b25642fa56fe9d61c93879793caabc9ea7827265f274",
+      "bytes": 1755,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-5.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-6.stderr.log.gz",
+      "sha256": "db8eeb9293e7d9e87bd630960db1668f5bda4c2e0cbaf91c771c8ace5b5b84de",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-6.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-6.stdout.log.gz",
+      "sha256": "a22ba267a9393f16258750acad4ab0640a76aed45f5d11b40664220c3b2d021f",
+      "bytes": 1752,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-6.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-7.stderr.log.gz",
+      "sha256": "969914ce53bc405f5d6c104ab1c9674edc2ea430f032d31ea4f8605bc3a90eff",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-7.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-dawn-7.stdout.log.gz",
+      "sha256": "67b4c70eb2f76fc13a7d9d97cfe3d374fd1ad31feac691758493ca06b27a4704",
+      "bytes": 1740,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-dawn-7.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-0.stderr.log.gz",
+      "sha256": "4c6199b91282a1b004d73998fca3ef4cbec27698383890fc6914334d339cea68",
+      "bytes": 207,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-0.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-0.stdout.log.gz",
+      "sha256": "d2e93eacb7404ff290bc2725fdb069263ab11a83664eccac4cb6ea8e2d319665",
+      "bytes": 1794,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-0.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-1.stderr.log.gz",
+      "sha256": "8f3a84f0e42dd5a3fe35345c5f475e11901ea4a6dfcbd15a94469d090fa6a311",
+      "bytes": 208,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-1.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-1.stdout.log.gz",
+      "sha256": "9527d38d790b47979999120e955d40034164fd7702b626a23d0beb317c7f58c1",
+      "bytes": 1814,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-1.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-2.stderr.log.gz",
+      "sha256": "492fed8f37dfab4b29afbd2d20fbbace225dfaef20e4eea7a2419d1de405ec24",
+      "bytes": 210,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-2.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-2.stdout.log.gz",
+      "sha256": "e6af568c11d5a9a450d8f10459d9e2446c597617123862e17bf7344b2e762756",
+      "bytes": 1818,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-2.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-3.stderr.log.gz",
+      "sha256": "4c2f94d8a20087edc86cb967656fdc9ce983b4c7c2512fbc3995f063c21086dc",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-3.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-3.stdout.log.gz",
+      "sha256": "868eff13cd209d79d2ddd4b15027213517ff6558f7dcdf31e62a4a1ec1f5321f",
+      "bytes": 1808,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-3.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-4.stderr.log.gz",
+      "sha256": "322c0ca7482820cff09f6e5f72925e985bd2e7fe085e91bfc83a51b588b1b5ba",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-4.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-4.stdout.log.gz",
+      "sha256": "2bdc2e2b8e73b9522efe252b5f5610ea0d1e1586ac05185e6392f7217c7e312e",
+      "bytes": 1806,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-4.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-5.stderr.log.gz",
+      "sha256": "fa153308034b04b35d3e37bed31cec2efcb8778419b8d7d7e1c28fda628c7270",
+      "bytes": 207,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-5.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-5.stdout.log.gz",
+      "sha256": "21ce152499a8cb7cc8cc87b60fe943c04a0e7936aed9484a293d329132149a3e",
+      "bytes": 1802,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-5.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-6.stderr.log.gz",
+      "sha256": "6ba60a3599e4925517a3f80f89f713ad44f0f52d22e955fb481b01f66d3ca3b4",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-6.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-6.stdout.log.gz",
+      "sha256": "e35483e26b84f2007a6c17bb7bd3ba7ce536c511554d999b9c35857677f0a569",
+      "bytes": 1811,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-6.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-7.stderr.log.gz",
+      "sha256": "62afd16fe653d0bee5c5d7bc60681cc6019a61b68287a504ba36aaf923f5eb9b",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-7.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/baseline-doe-7.stdout.log.gz",
+      "sha256": "44537834bb3e002870a627de0441c865b4e86fff0dd65f4c869caef550c24e90",
+      "bytes": 1812,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-doe-7.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/baseline/doe-qualification.json.gz",
+      "sha256": "63491f448906f0b5da4d0225f216a6027e877547d02df80fbe80339b488af543",
+      "bytes": 9272,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/doe-qualification.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/baseline/dawn-qualification.json.gz",
+      "sha256": "c98c428a6936237ebd3048cdecc42e85615e0f7cdbd68080369b6ece01425b92",
+      "bytes": 8940,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/dawn-qualification.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-0.json.gz",
+      "sha256": "2c001d13fac29e46ebae780f8425867eb40f40fe0a9cc365de34b5d41dd18713",
+      "bytes": 9825,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-0.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-1.json.gz",
+      "sha256": "867b2847b3f5ac8df6b8d0d140b48b8ce3dba3df749a5a99b7f8cf14e19fde7f",
+      "bytes": 9814,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-1.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-2.json.gz",
+      "sha256": "06b429eead35540b0894917034886553e6ed8d498506640691708a7ffdf31643",
+      "bytes": 9817,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-2.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-3.json.gz",
+      "sha256": "2f238e58035493920e822a2d54e7bd887d2681c50b29f7841bcc5773809cfcd8",
+      "bytes": 9854,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-3.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-4.json.gz",
+      "sha256": "a813728ccf1d73143141680bdc1be210d9c975330fe87f014a47a798ab5715c7",
+      "bytes": 9843,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-4.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-5.json.gz",
+      "sha256": "292b0d6f14c2583b7c59bb60a35c18f6c18762f935525465cf22ea252a831b05",
+      "bytes": 9823,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-5.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-6.json.gz",
+      "sha256": "b1f43cf06ece5f3a22f7936004b4586fbab8750ecf37b97da82a549b8e301e75",
+      "bytes": 9830,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-6.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-7.json.gz",
+      "sha256": "0b98028000558c71ca0611158cda9642085cda73fef2057c838c2a02c492103c",
+      "bytes": 9827,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-7.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-doe-0.json.gz",
+      "sha256": "60b9bc890a2c6ba9dff8aeff23fc9498ca5e21cd3f08a6ae8665ee297b1d5690",
+      "bytes": 10212,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-0.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-doe-1.json.gz",
+      "sha256": "81ff256b2653f569af7b0b6c4391f1c143597da094343e6107eb9e1f2c284bd9",
+      "bytes": 10199,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-1.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-doe-2.json.gz",
+      "sha256": "650e170d4693ae7a7ec71f3717b0220b386d8257a5e7724b37985cc645a32281",
+      "bytes": 10227,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-2.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-doe-3.json.gz",
+      "sha256": "26f36bb8a7f16fcfeb19c5814809cf4c35c5b06fd42b2eb83d8e9bd8d5e620cb",
+      "bytes": 10210,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-3.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-doe-4.json.gz",
+      "sha256": "4e8c3c5a94c2d6b9a5efb4ffd0908254cac382f9aae0d477ba7ce84883882bff",
+      "bytes": 10201,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-4.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-doe-5.json.gz",
+      "sha256": "6607bfa4b9a9ae4e4e61f7a6695b3d2ce5895d95860b83ba072fd16139a04e52",
+      "bytes": 10190,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-5.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-doe-6.json.gz",
+      "sha256": "f71c7bd0fb7d3acdc54820181aa12a621b9d4bc03d07d42ab8f08e0748ce801c",
+      "bytes": 10202,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-6.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-doe-7.json.gz",
+      "sha256": "b885891cf3ec9d84acf473c77e76158df03fb25fe0320b11f04644cba2fc98bf",
+      "bytes": 10183,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-7.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/candidate-processes.json.gz",
+      "sha256": "511ab3cbef6d44f55bf7df12151c6754eb80aa61868ead87a1540d8730017b80",
+      "bytes": 268,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-processes.json",
+      "schemaDefinition": "cohort"
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-0.stderr.log.gz",
+      "sha256": "3971be9aed7dc181fe3599baa4f09fbf623f645e798dafa6a01a2c4f305ea49b",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-0.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-0.stdout.log.gz",
+      "sha256": "6a935f6836014946eb11d714ffe59164b1c1ff5304b98f9f407022605077f592",
+      "bytes": 1763,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-0.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-1.stderr.log.gz",
+      "sha256": "b1617e58f03ef3b4074ec6252c133d58ed6ebef8e9af766ea8a98cd18523aef3",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-1.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-1.stdout.log.gz",
+      "sha256": "c9baa596f39d1fec15c09873c52e944ec12c2b0a898e7f793dab56f02eab1d83",
+      "bytes": 1739,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-1.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-2.stderr.log.gz",
+      "sha256": "2769feac0a0613c0101bac41bfdff98a9727edc63128ede7c689a7af8dd0921a",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-2.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-2.stdout.log.gz",
+      "sha256": "d9120a46893509f34ea37c597946c85470737f57c1ff68b1c895245493139f30",
+      "bytes": 1755,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-2.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-3.stderr.log.gz",
+      "sha256": "8800f9441002728b477f52cf26f3c864c859ad7b35b12ee229826a7f0995168f",
+      "bytes": 239,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-3.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-3.stdout.log.gz",
+      "sha256": "73e2e7839e82d523149451b81560c21dc8f22f03a11c62d7668b0830d061bb71",
+      "bytes": 1741,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-3.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-4.stderr.log.gz",
+      "sha256": "5e3d8ea29e99168aa5a8b0bbc1bf058cf0f38155a946efcaf7331f8233b01072",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-4.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-4.stdout.log.gz",
+      "sha256": "43af6ed02fa9c4de8e73a824f13d2830013c007e5a14c0a31eb205030a67fe95",
+      "bytes": 1753,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-4.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-5.stderr.log.gz",
+      "sha256": "d430f8a20f22201dc2f0427ade2ca2a895bbfff12888781348185ec3d910ed28",
+      "bytes": 238,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-5.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-5.stdout.log.gz",
+      "sha256": "ce1bc20e707f291c7ed71afe8b1a4e1fef2b27a7d092a249818a451629305236",
+      "bytes": 1749,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-5.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-6.stderr.log.gz",
+      "sha256": "5cc18bd5eedc1f02945dc54e985e8c36674680c17ed490e1664bc9a69bd64fa5",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-6.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-6.stdout.log.gz",
+      "sha256": "dce63d6aaa9005c53c20e49334e8f7ca2a988cecda92cb4bb79abecc0dc54853",
+      "bytes": 1762,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-6.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-7.stderr.log.gz",
+      "sha256": "7080445adc1efd53c6fdd24f481aa830d5e0722e48e41658d7ccc1de128f96bd",
+      "bytes": 240,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-7.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-dawn-7.stdout.log.gz",
+      "sha256": "35e820b0e71382b9dbc8eae9f35521aee580e034ab88f6977cc7588d11c90836",
+      "bytes": 1747,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-dawn-7.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-0.stderr.log.gz",
+      "sha256": "be4a199895c0871876c0a46c3d718be3122e1e9bcb0bc1b1d2b63b93282ef911",
+      "bytes": 210,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-0.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-0.stdout.log.gz",
+      "sha256": "c142e74fa60257b6e74321792bf84c998f64376b5bfe3d728ad7cf9a9211a17d",
+      "bytes": 1808,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-0.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-1.stderr.log.gz",
+      "sha256": "00365923d99ac659994e9afbcf84970879d630993edfa895a92e1dd502e72e18",
+      "bytes": 210,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-1.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-1.stdout.log.gz",
+      "sha256": "5067f9eebaa864f9871fb932e0075a4c7be54d243e7681ba822f5bab16e5d70a",
+      "bytes": 1807,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-1.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-2.stderr.log.gz",
+      "sha256": "341390da742d387ea182814f548fbae2611768e2ac35ae05a95a928e54fa0c66",
+      "bytes": 211,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-2.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-2.stdout.log.gz",
+      "sha256": "3c8b3eee5d33ab1bbda17c766e9b6ef705aa79be44c3e9450ef4c985ff84c623",
+      "bytes": 1818,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-2.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-3.stderr.log.gz",
+      "sha256": "3539140e46a54d82c2777367b009063f1207cd951df307068144a3f7bc99924f",
+      "bytes": 212,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-3.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-3.stdout.log.gz",
+      "sha256": "3b428b25605e092f49bcd533767c759559149ebebead3fdf8efd47b142b1daaf",
+      "bytes": 1800,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-3.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-4.stderr.log.gz",
+      "sha256": "d7ed82c6ac8f72cb7125ba33d3a338693c763c495c3e6d6b8f1f384db5fb2f0b",
+      "bytes": 211,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-4.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-4.stdout.log.gz",
+      "sha256": "2f507bf2759c8fc50b1da88fef732b57cd640c24367f881c3e5da68c7649b8aa",
+      "bytes": 1812,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-4.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-5.stderr.log.gz",
+      "sha256": "2574a26b07a16aadf8daac8710f9e905ff5bea9008af0eaaca4b0660bf98f657",
+      "bytes": 205,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-5.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-5.stdout.log.gz",
+      "sha256": "340b06decade0f140af5929ada71dace0560d8c3aac0bbf1be7ad7a6c36cc3cb",
+      "bytes": 1798,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-5.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-6.stderr.log.gz",
+      "sha256": "10c2d1239cdcc2541cb16dd9d14c289ca6c3ef13de9312b606ce430c2b8a262d",
+      "bytes": 210,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-6.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-6.stdout.log.gz",
+      "sha256": "b5448016753074c679a4b6b46cd644087a8997add4df87f0e87e07b4cec4f78c",
+      "bytes": 1810,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-6.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-7.stderr.log.gz",
+      "sha256": "931cccbf455a0f7983aa95f3ef10990bc76d0dd633d99837eeccd25a1c9762af",
+      "bytes": 211,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-7.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/candidate-doe-7.stdout.log.gz",
+      "sha256": "4a23f81fc3683081cd5f72f82e86facd4528bd986022e364cdaafc60b23cea70",
+      "bytes": 1793,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/candidate-doe-7.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/doe-qualification.json.gz",
+      "sha256": "74223ba3f6c5be602487560bf719f5faabb3ea017fb53842fde6e3de9e931606",
+      "bytes": 9308,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/doe-qualification.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/doe-qualification.log.gz",
+      "sha256": "fadf4b1cf5c076f4193e42f6083ed427857f549948018d2275edc096571a32b0",
+      "bytes": 1994,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/doe-qualification.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "raw/candidate/dawn-qualification.json.gz",
+      "sha256": "c6784631f4d484eb93d2df2be3790342b5f1bfcd40a2638d1d61f5becdf5648f",
+      "bytes": 8945,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/dawn-qualification.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "raw/candidate/dawn-qualification.log.gz",
+      "sha256": "b7bd3f0585b86b4e12bfbe98b9aea950f6a0afdd66576c2852df2785ebe850be",
+      "bytes": 1954,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/dawn-qualification.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/doe-profile.json.gz",
+      "sha256": "d8e378aaef09945df0e4b646c70faf4cf8a5ce003cc16609df194805227a9568",
+      "bytes": 1382663,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/doe-profile.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "diagnostics/doe-profile.log.gz",
+      "sha256": "fc55bc4e597596623687f804436e4958fe653fbeea3a532ee26f396856e6abcf",
+      "bytes": 1949,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/doe-profile.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/cleanup-profile.json.gz",
+      "sha256": "dce511d5c19a8e3cbb0561c49830f396edc7548ba0d776f7f2bf5e43cbe4f4c4",
+      "bytes": 1383045,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/cleanup-profile.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "diagnostics/cleanup-profile.log.gz",
+      "sha256": "2296fefe3112267a0ab5c28bf5db2ae03364490a815f92be0e51314d418b172e",
+      "bytes": 1943,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/cleanup-profile.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/doe-native-costs-resolved.json.gz",
+      "sha256": "f4d29d3c55d7b27324f6228e7c080232255d9f5743e3c6080c4f31e368cd8dad",
+      "bytes": 1381197,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/doe-native-costs-resolved.json",
+      "schemaDefinition": "receipt"
+    },
+    {
+      "path": "diagnostics/doe-native-costs-resolved.log.gz",
+      "sha256": "cae7db308ca06c2b8f33556f422bd3b6bf033b51f424de14eb9e86194dd144fc",
+      "bytes": 2034,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/doe-native-costs-resolved.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/vulkan-costs.c",
+      "sha256": "5faf460254a25217f09cb65043f92e5578403806d7269fb6ea4ea3baf5b326cc",
+      "bytes": 1897,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/vulkan-costs.c",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/vulkan-costs-failed.c",
+      "sha256": "173cd99ce755f076b497d36dfaea0217093d3c34903e561e69db2a56299110ef",
+      "bytes": 1615,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/vulkan-costs-failed.c",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/doe-native-costs.log",
+      "sha256": "3adb1f979ecfcbb664ef9331682ed7d9ab8dacfe51b139d60dde762f6aa0763b",
+      "bytes": 112,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/doe-native-costs.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/candidate-cohort.log",
+      "sha256": "33581cbfd6bc57be0cce52fdc7f7bcf1479e1b8b0117921264cb462e648fd520",
+      "bytes": 566,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate-cohort.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/candidate-dawn-0.stderr.log",
+      "sha256": "3ce46dbf1e8c5775c83486d38738638b01db3ce3a334b436ba7a513bbaeb6de1",
+      "bytes": 676,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate-dawn-0.stderr.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/candidate-dawn-0.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate-dawn-0.stdout.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/candidate-processes.json",
+      "sha256": "8042cc34abe64b5c101e6da0415fa099ca5a77e2b7f16c7838afb17cc7dd40cd",
+      "bytes": 194,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate-processes.json",
+      "schemaDefinition": "cohort"
+    },
+    {
+      "path": "diagnostics/build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/build.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/baseline-analysis.log",
+      "sha256": "486d281311bcc1e9b6b5b3514f13620a7ae6be8a975ee8c96734173a4fd36baa",
+      "bytes": 1285,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/baseline-analysis.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/candidate-analysis.log",
+      "sha256": "cd13745d212df208a521c17af6cc100c6c22c16ed231062f056cb734bef3089d",
+      "bytes": 1281,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate-analysis.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "diagnostics/admission-tests.log",
+      "sha256": "3682444f06376e31af6562484510f061989c2a72a6d7e500228a978b07e3b681",
+      "bytes": 103,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/admission-tests.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "candidate-checks/runtime-tests.log",
+      "sha256": "65dfc709d3a6b08573a38b48501edbad091c9cab61442b5447ceee56eb40be57",
+      "bytes": 4018,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/runtime-tests.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "candidate-checks/physical-retirement-summary.log.gz",
+      "sha256": "1849d57437e193b5f7d74816ac07afcafd0d7ea8c0cd6876d7c342dd80300671",
+      "bytes": 753,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/physical-retirement-summary.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "candidate-checks/buffer-map.log",
+      "sha256": "a311db079783667f00200326311d80c7cec4c007d86cb843769972184cbec8a4",
+      "bytes": 89,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/buffer-map.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "candidate-checks/render-ownership.log",
+      "sha256": "997648f4b48582b1a9edec92b2dea067dae26a8e9d9c99847e0c95ef75d04920",
+      "bytes": 236,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/render-ownership.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "candidate-checks/command-ownership.log",
+      "sha256": "7c2b80e10cb12717d8ba2ae6034925ba471aede616a4a9b5977e9f69f7b0e99b",
+      "bytes": 96,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/command-ownership.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "candidate-checks/cohort.log",
+      "sha256": "95574c2314f2c3d142e94e0780cfa04b9426ba842a82990f42447ca860c07513",
+      "bytes": 1224,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/candidate/cohort.log",
+      "schemaDefinition": null
+    },
+    {
+      "path": "source/run-generation.mjs",
+      "sha256": "0d3e05e8f5c2d23e9cbab9ffe00f8eb206173b2ddc556ccd752fb1370ce25e7b",
+      "bytes": 7892,
+      "sourcePath": "bench/external-projects/doppler-generation/run-generation.mjs",
+      "schemaDefinition": null
+    },
+    {
+      "path": "source/run-cohort.mjs",
+      "sha256": "f79f728cc983ad1a75a5273072ba02e6886155d1255b05959f959b2e63720554",
+      "bytes": 2171,
+      "sourcePath": "bench/external-projects/doppler-generation/run-cohort.mjs",
+      "schemaDefinition": null
+    },
+    {
+      "path": "source/compare.py",
+      "sha256": "e329054e4a2fa730f380394cdb3f85a8a24c14ab46790240ce5a71dacd3618e6",
+      "bytes": 5680,
+      "sourcePath": "bench/external-projects/doppler-generation/compare.py",
+      "schemaDefinition": null
+    },
+    {
+      "path": "source/observe-phases.mjs",
+      "sha256": "221575e514aec91e581427b83355c6a1765c91a27d196a599526da1d92ed2d89",
+      "bytes": 2156,
+      "sourcePath": "bench/external-projects/doppler-generation/observe-phases.mjs",
+      "schemaDefinition": null
+    },
+    {
+      "path": "source/analyze.py",
+      "sha256": "bc3148ac7641ea0931f0cc390d06db5ff7adc08437810c122d7e1531ca839898",
+      "bytes": 3066,
+      "sourcePath": "bench/external-projects/doppler-generation/analyze.py",
+      "schemaDefinition": null
+    },
+    {
+      "path": "source/attribute.py",
+      "sha256": "559f09d12f2c88f1cb862f4980bf5cc24bdc17c8e9ac7fc0695103cbd4e0d28b",
+      "bytes": 2716,
+      "sourcePath": "bench/external-projects/doppler-generation/attribute.py",
+      "schemaDefinition": null
+    },
+    {
+      "path": "source/contract.json",
+      "sha256": "e77adf8a73e872efda6b3fb13ac1810477b1f7d6adc7a73cea1b2ba9a87c8936",
+      "bytes": 4673,
+      "sourcePath": "bench/external-projects/doppler-generation/contract.json",
+      "schemaDefinition": null
+    },
+    {
+      "path": "source/analysis.json",
+      "sha256": "b52114a7e7124a737835c954cd3ece5883e2313535d97c6ea7400407d394317d",
+      "bytes": 644,
+      "sourcePath": "bench/external-projects/doppler-generation/analysis.json",
+      "schemaDefinition": null
+    },
+    {
+      "path": "source/observe-destruction-initial.mjs",
+      "sha256": "2a26dd6bd8995747ae3a6feab399e688ad6a4cdcff295b1be87924edcf4ff88a",
+      "bytes": 2211,
+      "sourcePath": "bench/out/doppler-generation/20261010-retirement/observe-destruction-initial.mjs",
+      "schemaDefinition": null
+    }
+  ],
+  "runtimeCandidateRetained": false,
+  "sourcePatchSha256": "9cc5413e2c0324f1fcc4c47001cc1f8ce0ba71173fa7825d3bf4886fb9de67f2",
+  "scope": "Rejected descriptor retirement candidate; repaired Doe baseline and candidate source are bound by base commit plus retained patch. Both use the same current host snapshot. Provider build metadata carries the earlier ancestry commit; patch applies to doeSourceCommit. First-token baseline control and material complete-generation gain fail. No performance, transfer, complete cleanup or installed release promotion."
+}

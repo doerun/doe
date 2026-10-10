@@ -15,6 +15,15 @@ Current evidence and its exact local archive custody are retained in the
 This candidate is rejected; its runtime patch must not be mistaken for accepted
 production code.
 
+The subsequent [descriptor-retirement experiment](../../../reports/benchmarks/amd-vulkan/20261010-doppler-descriptor-retirement/README.md)
+uses [its own frozen policy](retirement-candidate.json) for incremental
+complete-generation admission against repaired Doe. Pass that policy explicitly
+with `compare.py --candidate-policy`; omission preserves the original first-token
+experiment and its historical verdict byte for byte. The new policy checks both
+timing controls and unchanged Dawn drift, plus initial/resident tails and RSS.
+Neither admission nor regression success automatically promotes performance.
+This candidate is also rejected and its runtime patch is archived.
+
 ## Prepare identical inputs
 
 Use the source commits, dependency lock, model manifest, tokenizer and shard
@@ -58,6 +67,9 @@ Invoke `run-generation.mjs` with the final positional mode `profile` to observe
 API intervals. Qualification receipts for both providers must exist next to the
 output and match its contract and provider manifest. API observations include
 overlapping promises and downstream work; they are not pure GPU timestamps.
+The observer records buffer destruction and preserves returned values, thrown
+errors and rejected promises while recording their stacks. Observations never
+enter an uninstrumented timing cohort.
 
 ```bash
 node bench/external-projects/doppler-generation/run-cohort.mjs \

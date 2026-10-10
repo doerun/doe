@@ -1,0 +1,750 @@
+{
+  "schemaVersion": 1,
+  "classification": "diagnostic",
+  "scope": "API observer intervals include host work and overlapping completion promises. Each union is distinct and is not additive across methods or phases. No pure GPU, native allocation-count, physical GPU residency, or performance-promotion claim.",
+  "profiles": [
+    {
+      "path": "bench/out/doppler-generation/20261010-retirement/doe-profile.json",
+      "sha256": "f43b396488589c4d0afb01a0623685efed0a1cc80aaf8105239a9cf34dd98ef5",
+      "lane": "doe",
+      "loadMs": 1069.804766,
+      "cleanup": {
+        "unloaded": true,
+        "devicesDestroyed": 4,
+        "elapsedMs": 20.420239999999467
+      },
+      "phases": [
+        {
+          "phase": "load",
+          "allObservedApiIntervalUnionMs": 149.5696339999941,
+          "methods": [
+            {
+              "method": "createBuffer",
+              "calls": 552,
+              "intervalUnionMs": 86.4337189999959
+            },
+            {
+              "method": "destroy",
+              "calls": 240,
+              "intervalUnionMs": 19.10735000000028
+            },
+            {
+              "method": "createShaderModule",
+              "calls": 6,
+              "intervalUnionMs": 0.42112400000002026
+            },
+            {
+              "method": "createComputePipeline",
+              "calls": 1,
+              "intervalUnionMs": 0.6643410000000358
+            },
+            {
+              "method": "createBindGroup",
+              "calls": 238,
+              "intervalUnionMs": 4.25179299999985
+            },
+            {
+              "method": "createCommandEncoder",
+              "calls": 256,
+              "intervalUnionMs": 0.47916600000201015
+            },
+            {
+              "method": "submit",
+              "calls": 256,
+              "intervalUnionMs": 14.208467999998447
+            },
+            {
+              "method": "onSubmittedWorkDone",
+              "calls": 7,
+              "intervalUnionMs": 1.0662280000001374
+            },
+            {
+              "method": "mapAsync",
+              "calls": 1,
+              "intervalUnionMs": 0.12531599999999798
+            },
+            {
+              "method": "writeBuffer",
+              "calls": 554,
+              "intervalUnionMs": 20.76593699999762
+            },
+            {
+              "method": "createComputePipelineAsync",
+              "calls": 4,
+              "intervalUnionMs": 2.0987609999999677
+            }
+          ],
+          "bufferSizes": [
+            {
+              "bytes": 4,
+              "calls": 3,
+              "intervalUnionMs": 0.4087200000000166
+            },
+            {
+              "bytes": 16,
+              "calls": 236,
+              "intervalUnionMs": 4.735881999997446
+            },
+            {
+              "bytes": 64,
+              "calls": 2,
+              "intervalUnionMs": 0.19826399999988098
+            },
+            {
+              "bytes": 256,
+              "calls": 1,
+              "intervalUnionMs": 0.035677000000077896
+            },
+            {
+              "bytes": 512,
+              "calls": 2,
+              "intervalUnionMs": 0.28676899999982197
+            },
+            {
+              "bytes": 1024,
+              "calls": 36,
+              "intervalUnionMs": 1.6033820000000105
+            },
+            {
+              "bytes": 2048,
+              "calls": 4,
+              "intervalUnionMs": 0.1497820000001866
+            },
+            {
+              "bytes": 3072,
+              "calls": 3,
+              "intervalUnionMs": 0.07293700000036552
+            },
+            {
+              "bytes": 4096,
+              "calls": 73,
+              "intervalUnionMs": 2.305526999999074
+            },
+            {
+              "bytes": 8192,
+              "calls": 1,
+              "intervalUnionMs": 0.017983999999842126
+            },
+            {
+              "bytes": 131072,
+              "calls": 2,
+              "intervalUnionMs": 0.09594100000003891
+            },
+            {
+              "bytes": 327680,
+              "calls": 36,
+              "intervalUnionMs": 2.007553000000371
+            },
+            {
+              "bytes": 393216,
+              "calls": 1,
+              "intervalUnionMs": 0.062328000000206885
+            },
+            {
+              "bytes": 458752,
+              "calls": 1,
+              "intervalUnionMs": 0.07103299999994306
+            },
+            {
+              "bytes": 786432,
+              "calls": 1,
+              "intervalUnionMs": 0.09590099999991253
+            },
+            {
+              "bytes": 917504,
+              "calls": 1,
+              "intervalUnionMs": 0.12174000000004526
+            },
+            {
+              "bytes": 1310720,
+              "calls": 36,
+              "intervalUnionMs": 4.737843000000339
+            },
+            {
+              "bytes": 1966080,
+              "calls": 18,
+              "intervalUnionMs": 3.3372349999990547
+            },
+            {
+              "bytes": 2097152,
+              "calls": 36,
+              "intervalUnionMs": 6.281137999999601
+            },
+            {
+              "bytes": 2621440,
+              "calls": 54,
+              "intervalUnionMs": 12.39090099999953
+            },
+            {
+              "bytes": 16777216,
+              "calls": 4,
+              "intervalUnionMs": 7.25453900000025
+            },
+            {
+              "bytes": 335544320,
+              "calls": 1,
+              "intervalUnionMs": 40.16264299999989
+            }
+          ]
+        },
+        {
+          "phase": "initial",
+          "allObservedApiIntervalUnionMs": 476.7137619999926,
+          "methods": [
+            {
+              "method": "createCommandEncoder",
+              "calls": 123,
+              "intervalUnionMs": 0.34855499999912354
+            },
+            {
+              "method": "writeBuffer",
+              "calls": 190,
+              "intervalUnionMs": 1.0694820000014715
+            },
+            {
+              "method": "createBuffer",
+              "calls": 3834,
+              "intervalUnionMs": 119.37032700000464
+            },
+            {
+              "method": "createShaderModule",
+              "calls": 14,
+              "intervalUnionMs": 0.8270190000000639
+            },
+            {
+              "method": "createComputePipelineAsync",
+              "calls": 17,
+              "intervalUnionMs": 13.071279000000004
+            },
+            {
+              "method": "createBindGroup",
+              "calls": 4099,
+              "intervalUnionMs": 56.64758399999255
+            },
+            {
+              "method": "submit",
+              "calls": 123,
+              "intervalUnionMs": 87.34054599999945
+            },
+            {
+              "method": "onSubmittedWorkDone",
+              "calls": 109,
+              "intervalUnionMs": 81.09285999999929
+            },
+            {
+              "method": "destroy",
+              "calls": 3695,
+              "intervalUnionMs": 115.62274999999613
+            },
+            {
+              "method": "mapAsync",
+              "calls": 18,
+              "intervalUnionMs": 1.3473550000001069
+            },
+            {
+              "method": "getMappedRange",
+              "calls": 18,
+              "intervalUnionMs": 0.4360109999997803
+            }
+          ],
+          "bufferSizes": [
+            {
+              "bytes": 4,
+              "calls": 2,
+              "intervalUnionMs": 0.055785000000014406
+            },
+            {
+              "bytes": 16,
+              "calls": 37,
+              "intervalUnionMs": 1.2130920000004153
+            },
+            {
+              "bytes": 32,
+              "calls": 99,
+              "intervalUnionMs": 5.211434000001873
+            },
+            {
+              "bytes": 80,
+              "calls": 17,
+              "intervalUnionMs": 0.6599359999995613
+            },
+            {
+              "bytes": 256,
+              "calls": 2,
+              "intervalUnionMs": 0.10349500000006628
+            },
+            {
+              "bytes": 1024,
+              "calls": 775,
+              "intervalUnionMs": 13.631491999998161
+            },
+            {
+              "bytes": 4096,
+              "calls": 2184,
+              "intervalUnionMs": 71.40970600000605
+            },
+            {
+              "bytes": 8192,
+              "calls": 531,
+              "intervalUnionMs": 19.278022999997802
+            },
+            {
+              "bytes": 32768,
+              "calls": 24,
+              "intervalUnionMs": 0.40792700000042714
+            },
+            {
+              "bytes": 65536,
+              "calls": 83,
+              "intervalUnionMs": 2.9879860000005465
+            },
+            {
+              "bytes": 131072,
+              "calls": 38,
+              "intervalUnionMs": 0.9450500000002648
+            },
+            {
+              "bytes": 196608,
+              "calls": 24,
+              "intervalUnionMs": 0.7244180000002416
+            },
+            {
+              "bytes": 1048576,
+              "calls": 18,
+              "intervalUnionMs": 2.741982999999209
+            }
+          ]
+        },
+        {
+          "phase": "warmup",
+          "allObservedApiIntervalUnionMs": 425.3088259999886,
+          "methods": [
+            {
+              "method": "createCommandEncoder",
+              "calls": 123,
+              "intervalUnionMs": 0.315634000000955
+            },
+            {
+              "method": "writeBuffer",
+              "calls": 118,
+              "intervalUnionMs": 0.721070000000509
+            },
+            {
+              "method": "createBindGroup",
+              "calls": 4099,
+              "intervalUnionMs": 44.2464059999993
+            },
+            {
+              "method": "createBuffer",
+              "calls": 3711,
+              "intervalUnionMs": 97.79559999998128
+            },
+            {
+              "method": "submit",
+              "calls": 123,
+              "intervalUnionMs": 80.10816400000067
+            },
+            {
+              "method": "onSubmittedWorkDone",
+              "calls": 109,
+              "intervalUnionMs": 80.96147299999984
+            },
+            {
+              "method": "destroy",
+              "calls": 3695,
+              "intervalUnionMs": 120.32851600000686
+            },
+            {
+              "method": "mapAsync",
+              "calls": 18,
+              "intervalUnionMs": 0.9686129999986406
+            },
+            {
+              "method": "getMappedRange",
+              "calls": 18,
+              "intervalUnionMs": 0.3319629999996323
+            }
+          ],
+          "bufferSizes": [
+            {
+              "bytes": 16,
+              "calls": 16,
+              "intervalUnionMs": 0.44890299999997296
+            },
+            {
+              "bytes": 32,
+              "calls": 67,
+              "intervalUnionMs": 3.4375539999973626
+            },
+            {
+              "bytes": 1024,
+              "calls": 768,
+              "intervalUnionMs": 13.498284999988755
+            },
+            {
+              "bytes": 4096,
+              "calls": 2176,
+              "intervalUnionMs": 60.1772300000016
+            },
+            {
+              "bytes": 8192,
+              "calls": 528,
+              "intervalUnionMs": 15.095023999995647
+            },
+            {
+              "bytes": 32768,
+              "calls": 16,
+              "intervalUnionMs": 0.04985600000009072
+            },
+            {
+              "bytes": 65536,
+              "calls": 75,
+              "intervalUnionMs": 2.7369079999984933
+            },
+            {
+              "bytes": 131072,
+              "calls": 32,
+              "intervalUnionMs": 0.1967319999994288
+            },
+            {
+              "bytes": 196608,
+              "calls": 16,
+              "intervalUnionMs": 0.11172999999962485
+            },
+            {
+              "bytes": 1048576,
+              "calls": 17,
+              "intervalUnionMs": 2.0433780000003026
+            }
+          ]
+        },
+        {
+          "phase": "A",
+          "allObservedApiIntervalUnionMs": 419.4093850000095,
+          "methods": [
+            {
+              "method": "createCommandEncoder",
+              "calls": 123,
+              "intervalUnionMs": 0.3170189999991635
+            },
+            {
+              "method": "writeBuffer",
+              "calls": 118,
+              "intervalUnionMs": 0.7028509999986454
+            },
+            {
+              "method": "createBindGroup",
+              "calls": 4099,
+              "intervalUnionMs": 42.136346999988746
+            },
+            {
+              "method": "createBuffer",
+              "calls": 3711,
+              "intervalUnionMs": 98.30608700000539
+            },
+            {
+              "method": "submit",
+              "calls": 123,
+              "intervalUnionMs": 81.67870900000025
+            },
+            {
+              "method": "onSubmittedWorkDone",
+              "calls": 109,
+              "intervalUnionMs": 78.67732400000295
+            },
+            {
+              "method": "destroy",
+              "calls": 3695,
+              "intervalUnionMs": 116.56756000001542
+            },
+            {
+              "method": "mapAsync",
+              "calls": 18,
+              "intervalUnionMs": 1.1337759999992159
+            },
+            {
+              "method": "getMappedRange",
+              "calls": 18,
+              "intervalUnionMs": 0.35927799999990384
+            }
+          ],
+          "bufferSizes": [
+            {
+              "bytes": 16,
+              "calls": 16,
+              "intervalUnionMs": 0.45625800000061645
+            },
+            {
+              "bytes": 32,
+              "calls": 67,
+              "intervalUnionMs": 3.283007999997608
+            },
+            {
+              "bytes": 1024,
+              "calls": 768,
+              "intervalUnionMs": 12.606488999994326
+            },
+            {
+              "bytes": 4096,
+              "calls": 2176,
+              "intervalUnionMs": 58.75495900000533
+            },
+            {
+              "bytes": 8192,
+              "calls": 528,
+              "intervalUnionMs": 18.785179000004064
+            },
+            {
+              "bytes": 32768,
+              "calls": 16,
+              "intervalUnionMs": 0.062039000000368105
+            },
+            {
+              "bytes": 65536,
+              "calls": 75,
+              "intervalUnionMs": 1.6968250000018088
+            },
+            {
+              "bytes": 131072,
+              "calls": 32,
+              "intervalUnionMs": 0.20466399999895657
+            },
+            {
+              "bytes": 196608,
+              "calls": 16,
+              "intervalUnionMs": 0.11402500000122018
+            },
+            {
+              "bytes": 1048576,
+              "calls": 17,
+              "intervalUnionMs": 2.3426410000010947
+            }
+          ]
+        },
+        {
+          "phase": "B",
+          "allObservedApiIntervalUnionMs": 413.72774199996866,
+          "methods": [
+            {
+              "method": "createCommandEncoder",
+              "calls": 123,
+              "intervalUnionMs": 0.29180800000222007
+            },
+            {
+              "method": "writeBuffer",
+              "calls": 118,
+              "intervalUnionMs": 0.6697119999998904
+            },
+            {
+              "method": "createBindGroup",
+              "calls": 4099,
+              "intervalUnionMs": 41.89236399997162
+            },
+            {
+              "method": "createBuffer",
+              "calls": 3711,
+              "intervalUnionMs": 93.70004299999437
+            },
+            {
+              "method": "submit",
+              "calls": 123,
+              "intervalUnionMs": 78.66189999999915
+            },
+            {
+              "method": "onSubmittedWorkDone",
+              "calls": 109,
+              "intervalUnionMs": 79.9071459999991
+            },
+            {
+              "method": "destroy",
+              "calls": 3695,
+              "intervalUnionMs": 117.66638500000363
+            },
+            {
+              "method": "mapAsync",
+              "calls": 18,
+              "intervalUnionMs": 1.07643699999835
+            },
+            {
+              "method": "getMappedRange",
+              "calls": 18,
+              "intervalUnionMs": 0.33844500000031985
+            }
+          ],
+          "bufferSizes": [
+            {
+              "bytes": 16,
+              "calls": 16,
+              "intervalUnionMs": 0.41682400000081543
+            },
+            {
+              "bytes": 32,
+              "calls": 67,
+              "intervalUnionMs": 3.5853480000032505
+            },
+            {
+              "bytes": 1024,
+              "calls": 768,
+              "intervalUnionMs": 12.29626799999778
+            },
+            {
+              "bytes": 4096,
+              "calls": 2176,
+              "intervalUnionMs": 58.5311659999993
+            },
+            {
+              "bytes": 8192,
+              "calls": 528,
+              "intervalUnionMs": 15.113548999993782
+            },
+            {
+              "bytes": 32768,
+              "calls": 16,
+              "intervalUnionMs": 0.05616300000110641
+            },
+            {
+              "bytes": 65536,
+              "calls": 75,
+              "intervalUnionMs": 1.5759379999994962
+            },
+            {
+              "bytes": 131072,
+              "calls": 32,
+              "intervalUnionMs": 0.20700699999997596
+            },
+            {
+              "bytes": 196608,
+              "calls": 16,
+              "intervalUnionMs": 0.21129799999926036
+            },
+            {
+              "bytes": 1048576,
+              "calls": 17,
+              "intervalUnionMs": 1.7064819999995962
+            }
+          ]
+        },
+        {
+          "phase": "cancellation",
+          "allObservedApiIntervalUnionMs": 482.01959699999406,
+          "methods": [
+            {
+              "method": "createCommandEncoder",
+              "calls": 141,
+              "intervalUnionMs": 0.3856279999954495
+            },
+            {
+              "method": "writeBuffer",
+              "calls": 131,
+              "intervalUnionMs": 0.7375089999959528
+            },
+            {
+              "method": "createBindGroup",
+              "calls": 4613,
+              "intervalUnionMs": 49.555111999986366
+            },
+            {
+              "method": "createBuffer",
+              "calls": 4077,
+              "intervalUnionMs": 95.54239999999845
+            },
+            {
+              "method": "submit",
+              "calls": 141,
+              "intervalUnionMs": 82.49357200000941
+            },
+            {
+              "method": "onSubmittedWorkDone",
+              "calls": 129,
+              "intervalUnionMs": 117.68586100000084
+            },
+            {
+              "method": "destroy",
+              "calls": 4060,
+              "intervalUnionMs": 134.6870210000061
+            },
+            {
+              "method": "mapAsync",
+              "calls": 21,
+              "intervalUnionMs": 1.0323130000015226
+            },
+            {
+              "method": "getMappedRange",
+              "calls": 21,
+              "intervalUnionMs": 0.3960370000013427
+            }
+          ],
+          "bufferSizes": [
+            {
+              "bytes": 16,
+              "calls": 17,
+              "intervalUnionMs": 0.4554859999980181
+            },
+            {
+              "bytes": 32,
+              "calls": 74,
+              "intervalUnionMs": 3.6514270000006945
+            },
+            {
+              "bytes": 1024,
+              "calls": 816,
+              "intervalUnionMs": 12.640034000001833
+            },
+            {
+              "bytes": 4096,
+              "calls": 2312,
+              "intervalUnionMs": 58.635427999996864
+            },
+            {
+              "bytes": 8192,
+              "calls": 561,
+              "intervalUnionMs": 14.4195130000071
+            },
+            {
+              "bytes": 32768,
+              "calls": 32,
+              "intervalUnionMs": 0.12424499999997352
+            },
+            {
+              "bytes": 65536,
+              "calls": 150,
+              "intervalUnionMs": 2.968043999994734
+            },
+            {
+              "bytes": 131072,
+              "calls": 64,
+              "intervalUnionMs": 0.4104609999976674
+            },
+            {
+              "bytes": 196608,
+              "calls": 32,
+              "intervalUnionMs": 0.22722599999997328
+            },
+            {
+              "bytes": 1048576,
+              "calls": 19,
+              "intervalUnionMs": 2.0105360000015935
+            }
+          ]
+        },
+        {
+          "phase": "cleanup",
+          "allObservedApiIntervalUnionMs": 14.235402000005706,
+          "methods": [
+            {
+              "method": "destroy",
+              "calls": 514,
+              "intervalUnionMs": 13.05964700000277
+            },
+            {
+              "method": "onSubmittedWorkDone",
+              "calls": 3,
+              "intervalUnionMs": 2.2032480000007126
+            }
+          ],
+          "bufferSizes": []
+        }
+      ]
+    }
+  ]
+}

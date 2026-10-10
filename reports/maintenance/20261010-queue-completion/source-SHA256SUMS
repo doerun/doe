@@ -1,0 +1,8 @@
+f1f207238b258197db9d864eeb549df46f9dee47361f296373df8744c73f597f  packages/doe-gpu/src/vendor/webgpu/shared/full-surface.js
+6165b2e7d0c15af021049a44b3df89270dc8fb6606e1a2f7f359a1be85dd8475  packages/doe-gpu/test/unit/full-surface-lifecycle.test.js
+b1077b9968fc113f0873f644dd62069ca4786ad3839f6e05b42d599a31ac4b38  packages/doe-gpu/test/integration/test-integration-native-buffer-map.js
+221575e514aec91e581427b83355c6a1765c91a27d196a599526da1d92ed2d89  bench/external-projects/doppler-generation/observe-phases.mjs
+0d3e05e8f5c2d23e9cbab9ffe00f8eb206173b2ddc556ccd752fb1370ce25e7b  bench/external-projects/doppler-generation/run-generation.mjs
+e77adf8a73e872efda6b3fb13ac1810477b1f7d6adc7a73cea1b2ba9a87c8936  bench/external-projects/doppler-generation/contract.json
+c71da2db7a01a87f714446b68eb5eb1550b478f97784e9cba580f05b287dc546  reports/benchmarks/amd-vulkan/20261004-doppler-generation/reference.json
+8c8ca1bece029f236e0982d55af0e2a07d71b1b07422436eac18273061742152  bench/out/doppler-generation/20261004/installed/doppler/src/memory/buffer-pool.js

@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "classification": "diagnostic",
+  "candidateId": "batched-buffer-descriptor-retirement-v1",
+  "contractSha256": "e77adf8a73e872efda6b3fb13ac1810477b1f7d6adc7a73cea1b2ba9a87c8936",
+  "baselineSummarySha256": "ea49196a724c9a0feea205fd3b54944a8f32c54e3e86e5376710e02dbefc0f7c",
+  "candidateSummarySha256": "5338cac3ec6f131bf40444181be5a255bfd1be828abacae24c683d09da8d9172",
+  "primaryGainRatio": 0.9505433763243764,
+  "ratios": [
+    {
+      "lane": "doe",
+      "scope": "initial",
+      "metric": "firstTokenMs",
+      "p50CandidateOverBaseline": 0.9866141887456849,
+      "p95CandidateOverBaseline": 0.9931214508968076
+    },
+    {
+      "lane": "doe",
+      "scope": "initial",
+      "metric": "completeMs",
+      "p50CandidateOverBaseline": 1.0350063143362147,
+      "p95CandidateOverBaseline": 1.0207463223611846
+    },
+    {
+      "lane": "doe",
+      "scope": "resident",
+      "metric": "firstTokenMs",
+      "p50CandidateOverBaseline": 1.0294603565282807,
+      "p95CandidateOverBaseline": 1.020431931775858
+    },
+    {
+      "lane": "doe",
+      "scope": "resident",
+      "metric": "completeMs",
+      "p50CandidateOverBaseline": 1.0520298440949278,
+      "p95CandidateOverBaseline": 1.0344325915453254
+    },
+    {
+      "lane": "doe",
+      "scope": "process",
+      "metric": "peakProcessRssBytes",
+      "p95CandidateOverBaseline": 1.0167553696429263
+    },
+    {
+      "lane": "dawn",
+      "scope": "initial",
+      "metric": "firstTokenMs",
+      "p50CandidateOverBaseline": 1.0067600899450688,
+      "p95CandidateOverBaseline": 0.9770356518071898
+    },
+    {
+      "lane": "dawn",
+      "scope": "initial",
+      "metric": "completeMs",
+      "p50CandidateOverBaseline": 0.9984616967783643,
+      "p95CandidateOverBaseline": 1.0167661585474765
+    },
+    {
+      "lane": "dawn",
+      "scope": "resident",
+      "metric": "firstTokenMs",
+      "p50CandidateOverBaseline": 1.010252630975294,
+      "p95CandidateOverBaseline": 0.9979171008584247
+    },
+    {
+      "lane": "dawn",
+      "scope": "resident",
+      "metric": "completeMs",
+      "p50CandidateOverBaseline": 1.0051973665008151,
+      "p95CandidateOverBaseline": 1.0489289120187724
+    },
+    {
+      "lane": "dawn",
+      "scope": "process",
+      "metric": "peakProcessRssBytes",
+      "p95CandidateOverBaseline": 0.9890315827957327
+    }
+  ],
+  "checks": [
+    {
+      "id": "baseline_doe_firstTokenMs_control",
+      "passed": false
+    },
+    {
+      "id": "baseline_doe_completeMs_control",
+      "passed": true
+    },
+    {
+      "id": "candidate_doe_firstTokenMs_control",
+      "passed": true
+    },
+    {
+      "id": "candidate_doe_completeMs_control",
+      "passed": true
+    },
+    {
+      "id": "initial_firstTokenMs_tail",
+      "passed": true
+    },
+    {
+      "id": "initial_completeMs_tail",
+      "passed": true
+    },
+    {
+      "id": "resident_firstTokenMs_tail",
+      "passed": true
+    },
+    {
+      "id": "resident_completeMs_tail",
+      "passed": true
+    },
+    {
+      "id": "doe_host_peak_rss",
+      "passed": true
+    },
+    {
+      "id": "baseline_dawn_firstTokenMs_control",
+      "passed": true
+    },
+    {
+      "id": "baseline_dawn_completeMs_control",
+      "passed": true
+    },
+    {
+      "id": "candidate_dawn_firstTokenMs_control",
+      "passed": true
+    },
+    {
+      "id": "candidate_dawn_completeMs_control",
+      "passed": true
+    },
+    {
+      "id": "unchanged_dawn_resident_firstTokenMs_drift",
+      "passed": true
+    },
+    {
+      "id": "unchanged_dawn_resident_completeMs_drift",
+      "passed": true
+    },
+    {
+      "id": "dawn_host_peak_rss",
+      "passed": true
+    },
+    {
+      "id": "material_resident_completeMs_gain",
+      "passed": false
+    }
+  ],
+  "timingAdmissionPassed": false,
+  "performancePromoted": false,
+  "disposition": "rejected",
+  "completeLatencyClaimAllowed": true,
+  "scope": "Unchanged-application replacement; incremental complete-generation admission against repaired Doe. Dawn remains an unchanged drift control. No incumbent advantage or transfer claim; no outcome-selected retry. Cleanup warning and process CPU consumption remain separately unqualified.",
+  "candidatePolicySha256": "a81106e5d9acd28edeb96ec43f7badbda4c9a088c4b82c1812be810d95b7cedb"
+}

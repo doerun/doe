@@ -37,6 +37,42 @@ async function assertRejectsOperationError(promise) {
 }
 
 {
+  let complete;
+  let waits = 0;
+  const device = createTestDevice({
+    queueHasPendingSubmissions() { return true; },
+    queueOnSubmittedWorkDone() {
+      waits += 1;
+      return new Promise(resolve => { complete = resolve; });
+    },
+    queueMarkSubmittedWorkDone() {
+      assert.fail('completion must not touch a destroyed queue');
+    },
+  });
+  const order = [];
+  const pending = device.queue.onSubmittedWorkDone().then(() => order.push('before'));
+  device.destroy();
+  const after = device.queue.onSubmittedWorkDone().then(() => order.push('after'));
+  await Promise.resolve();
+  assert.deepEqual(order, []);
+  complete();
+  await Promise.all([pending, after]);
+  assert.deepEqual(order, ['before', 'after']);
+  assert.equal(waits, 1);
+  assert.throws(() => device.queue.submit([]), /destroyed/);
+}
+
+{
+  const failure = new Error('completion failed on live device');
+  const device = createTestDevice({
+    queueHasPendingSubmissions() { return true; },
+    queueOnSubmittedWorkDone() { return Promise.reject(failure); },
+  });
+  await assert.rejects(device.queue.onSubmittedWorkDone(), error => error === failure);
+  device.destroy();
+}
+
+{
   let destroyed = 0;
   const handlers = [];
   const device = createTestDevice({

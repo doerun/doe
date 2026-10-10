@@ -125,7 +125,7 @@ file	src/backend/vulkan/vk_functions.zig	stale	vulkan_batch_20260920_23_vk_funct
 file	src/backend/vulkan/vk_memory_policy.zig	stale	vulkan_batch_20260920_24_vk_memory_policy		Retain this responsibility; revalidate when the bound inputs change.
 file	src/backend/vulkan/vk_metrics.zig	stale	vulkan_batch_20260920_25_vk_metrics		Retain this responsibility; revalidate when the bound inputs change.
 file	src/backend/vulkan/vk_pipeline.zig	stale	vulkan_submission_vk_pipeline_20261004_custody		Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.
-file	src/backend/vulkan/vk_pipeline_cache.zig	stale	vulkan_submission_vk_pipeline_cache_20261004_custody		Preserve this scoped owner and acceptance evidence; profile generated Vulkan execution by application cost before selecting one SPIR-V transformation. Continue complete file and relationship review separately.
+file	src/backend/vulkan/vk_pipeline_cache.zig	in_progress	20261010_vulkan_descriptor_retirement_rejected		Keep the rejected patch archived. Before another performance selection, distinguish allocation/driver work from descriptor scanning on the repaired host; do not reopen buffer reuse or select a successor automatically. Complete the remaining whole-file examination separately.
 file	src/backend/vulkan/vk_pipeline_cache_persistent.zig	stale	vulkan_batch_20260920_28_vk_pipeline_cache_persistent		Resolve the named findings with owner-specific failure and integration tests before verification.
 file	src/backend/vulkan/vk_render.zig	stale	vulkan_surface_render_20260928		Reconfirm exact public capability/configuration admission through the same windowed consumer. Preserve the completed handoff; broader pacing and runtime decomposition remain separate.
 file	src/backend/vulkan/vk_render_pipeline.zig	stale	vulkan_batch_20260920_30_vk_render_pipeline		Resolve the named findings with owner-specific failure and integration tests before verification.
@@ -443,7 +443,7 @@ file	src/core/resource/wgpu_resources.zig	pending			Read and review the complete
 file	src/core/resource/wgpu_texture_commands.zig	pending			Read and review the complete scope.
 file	src/core/runtime/wgpu_capability_runtime.zig	pending			Read and review the complete scope.
 file	src/core/surface.zig	pending			Read and review the complete scope.
-file	src/dropin/dropin_abi_procs.zig	in_progress	dropin_mapping_callback_repair_20261010		Attribute dominant complete-generation costs on the repaired baseline and investigate the retained Doppler deferred-destruction warning before promoting settled cleanup; freeze new acceptance before implementing an optimization.
+file	src/dropin/dropin_abi_procs.zig	stale	dropin_mapping_callback_repair_20261010		Attribute dominant complete-generation costs on the repaired baseline and investigate the retained Doppler deferred-destruction warning before promoting settled cleanup; freeze new acceptance before implementing an optimization.
 file	src/dropin/dropin_behavior_policy.zig	pending			Read and review the complete scope.
 file	src/dropin/dropin_browser_shared_memory.zig	pending			Read and review the complete scope.
 file	src/dropin/dropin_diagnostics.zig	pending			Read and review the complete scope.
