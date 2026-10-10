@@ -1,0 +1,86 @@
+Doe ONNX/Vulkan evaluation integration
+
+This archive runs ONNX Runtime's existing WebGPU operators through Doe's pinned
+Dawn procedure-table bridge. It includes a source-built WebGPU provider, the
+matching published ONNX core, the qualified Doe native library, the existing
+SqueezeNet console example and independent full-output reference, and acceptance
+fixtures. It is an evaluation release; no performance or adoption claim is made.
+
+Requirements
+
+Linux x86_64, glibc and libstdc++ compatible with the included ELF binaries,
+Python 3.11 or newer, bubblewrap (bwrap), an accessible AMD Vulkan GPU and its
+installed Vulkan driver. No Python packages, Node, model download, compiler,
+repository checkout, or network are required to run the installed example.
+The host driver and system libraries are deliberately not bundled. Qualification
+binds their actual loaded bytes. Each additional host needs its own passing run.
+
+Installation
+
+Obtain the archive and its expected SHA-256 from the release producer. Verify
+that digest before extracting the bootstrap scripts. Extract into a new directory
+using tar -xzf, then use the included installer to verify and install a fresh copy:
+
+  python3 bootstrap/doe_onnx.py install /path/to/archive.tar.gz \
+    --sha256 EXPECTED_DIGEST --prefix /path/to/doe-onnx-VERSION
+  python3 /path/to/doe-onnx-VERSION/doe_onnx.py verify
+  python3 /path/to/doe-onnx-VERSION/doe_onnx.py qualify --out /path/to/new-results
+  python3 /path/to/doe-onnx-VERSION/doe_onnx.py run --out /path/to/new-example-run
+
+Use a new results directory outside the installation for each invocation. The
+installer refuses existing destinations and rejects changed files, symlinks,
+duplicate archive members, and escaping paths. Versions live side by side; roll
+back by starting a new process with the prior version after existing work settles.
+Do not replace libraries in a live process or transfer its GPU objects.
+
+Execution and failures
+
+The example retains the original model, generated ramp input, tensor operations,
+extended graph optimization, and independent numerical tolerances. CPU fallback
+is disabled. It explicitly selects Vulkan and an AMD device. Manifest identity,
+loader observations, native shader/dispatch receipts, operator placement and the
+full-output oracle are separate checks. Qualification deliberately runs failing
+missing-native and corrupted-reference controls; their expected failures must be
+observed for acceptance. The final qualification.json records every outcome.
+
+The initialization fixture rejects missing/incomplete libraries, retries a valid
+initialization, and rejects live rebinding. Callback and device-lifecycle fixtures
+cover their named status, delivery, destruction, recovery and settled cleanup
+paths, including DRM client release before process exit. A process deadline is
+a failed evaluation, never proof that submitted GPU work was interrupted safely.
+Real driver loss, instance abandonment, general concurrent API conformance and
+submitted-work cancellation remain unqualified. Other backends are not admitted.
+
+Embedding
+
+source/application-provider.h and source/main.cpp contain the complete example
+integration against include/onnx and include/dawn. The application registers the
+included provider with the pinned ONNX core and supplies the process-owned bridge
+table plus an explicit instance/device. The upstream provider was built with
+external Dawn and a retained context patch; stock ONNX wheels are not substitutes.
+source/provider-context.patch and provenance/provider-build.json bind that seam.
+The bridge rejects unsupported ABI/descriptor paths explicitly and does not
+implement ONNX operators. Preserve provider and core versions together.
+
+Callbacks and library handles follow the bundled contracts. Initialization is
+serialized before consumer use. Release sessions before unregistering the
+provider, then settle resource ownership and destroy/release the device and
+instance. Native and bridge libraries remain loaded for the process lifetime.
+Unknown GPU completion retains ownership; a timeout does not authorize reuse.
+Treat null/status failures as errors. Unqualified void/future rejection may fail
+the process. Do not infer universal WebGPU compatibility from this example.
+
+Provenance and rebuilding
+
+release-inputs.json binds source input paths and digests; those producer paths are
+historical provenance and are never opened by installed execution. provenance/
+retains upstream/core/header/native identities and compiler commands. source/
+retains example, bridge, context and fixture sources, together with ABI headers.
+Build the pinned provider using its retained build options and context patch;
+rebuilding any component requires a new manifest and physical qualification.
+Archive reproducibility means identical supplied binary/source inputs produce
+identical archive bytes, not that unrelated toolchains produce identical binaries.
+
+The licenses/ directory retains Doe, ONNX, example, model, interface and dependency
+notices. System loader/driver dependencies remain supplied by the host. This
+integration is independent of Doppler, Reploid, browser WebGPU and npm packaging.

@@ -1,0 +1,407 @@
+{
+  "compatibility": {
+    "cpuFallback": false,
+    "dawnAbiCommit": "ec7b457e5bb1fcec6f59733c4f3dd84d2f885a38",
+    "excluded": [
+      "submitted-work-interruption",
+      "real-driver-loss",
+      "instance-abandonment",
+      "general-conformance",
+      "Metal",
+      "D3D12",
+      "browser-switching"
+    ],
+    "onnxCore": "1.24.4",
+    "onnxProviderCommit": "d2ede0adeb300958cfb5a256c09d27c66c3a6d71",
+    "providerBuild": "source-built-external-dawn-with-context-patch",
+    "validation": "full"
+  },
+  "files": {
+    "INSTALL.txt": {
+      "mode": 420,
+      "sha256": "ff6a721dc9ec843bf80851f52d593049c1603d911a9dc6b939a5634b8ab23db3",
+      "size": 5165
+    },
+    "application": {
+      "mode": 493,
+      "sha256": "a4c4416a7a7c076b72d1a375526113e3e42311f54f1f18ddcbf06cef3234b748",
+      "size": 73264
+    },
+    "bridge-build.json": {
+      "mode": 420,
+      "sha256": "04c43bf979281ff067641e86a98550938c89b341df44a2922d9ae75007212be8",
+      "size": 21576
+    },
+    "bridge.so": {
+      "mode": 420,
+      "sha256": "7805b787d716df337f3b499e1217773d4ed826cbf43634da41789a51f14d907f",
+      "size": 2735544
+    },
+    "check_init.py": {
+      "mode": 420,
+      "sha256": "1681152ccea8ccce8ae4793b244cd54404c7424234e750bcbbfb1ceeb1436d32",
+      "size": 1235
+    },
+    "checks/callbacks": {
+      "mode": 493,
+      "sha256": "0b593da660d1ebdbda9333092b00774b6340a0cebdd7d0ffbe0174a0681db631",
+      "size": 32672
+    },
+    "checks/lifecycle": {
+      "mode": 493,
+      "sha256": "83c16495feb0d994bbc37983f8c09c5d38a3a78e4e85d1ef82d36eae5ee5c506",
+      "size": 28296
+    },
+    "context.so": {
+      "mode": 420,
+      "sha256": "5a9b546a2f2c8372885840690bf3394868437e0b6f095ce5d616e605c6cab180",
+      "size": 18232
+    },
+    "contracts/callback.json": {
+      "mode": 420,
+      "sha256": "ca091e8407b2d61f744cd3d96e4b03199ed0299d8e123142c9cbbaf3c9ec00cd",
+      "size": 1136
+    },
+    "contracts/lifecycle.json": {
+      "mode": 420,
+      "sha256": "cc2629b0fab08b7c755383b0fc4570516e4f01836ed093159005315fdef665f8",
+      "size": 1224
+    },
+    "corrupted.f32": {
+      "mode": 420,
+      "sha256": "fc19b1997119425765295aeab72d76faa6927d4f83985d328c26f20468d6cc76",
+      "size": 4000
+    },
+    "distribution.py": {
+      "mode": 420,
+      "sha256": "f0a315acf25828ccdc9b9d0e6a947019daa1879540b2609def64db873d3a382b",
+      "size": 5767
+    },
+    "doe.so": {
+      "mode": 420,
+      "sha256": "5df419827ac98599ba4ad640d3bd28b14038f4e458ccd2c4e0ffe507cd9f82c7",
+      "size": 12039240
+    },
+    "doe_onnx.py": {
+      "mode": 420,
+      "sha256": "3ce3894c0001e4b09262feef54efb230ec056b23b7c5cbb699559f21c4bb713b",
+      "size": 1984
+    },
+    "include/dawn/dawn_proc_table.h": {
+      "mode": 420,
+      "sha256": "e6a01f14e95d1c020a05f7ac0bc76bfb7d5d6bea79245cf12a41d88ab4f6f3b2",
+      "size": 17296
+    },
+    "include/dawn/webgpu.h": {
+      "mode": 420,
+      "sha256": "3f74ce2470db6a9ba158b849c9f3192d88c08731458246123cf582a7d4d74717",
+      "size": 251470
+    },
+    "include/onnx/onnxruntime_c_api.h": {
+      "mode": 420,
+      "sha256": "9ed0d7054a4e74249467365b25b415d36f51a44a6349e2a994a1812e4723d1e2",
+      "size": 373908
+    },
+    "include/onnx/onnxruntime_cxx_api.h": {
+      "mode": 420,
+      "sha256": "5eb8809db561261210ffcafcf9823873f0603fd799542797b6b728bb3f75e5f6",
+      "size": 156761
+    },
+    "include/onnx/onnxruntime_cxx_inline.h": {
+      "mode": 420,
+      "sha256": "022f4559009a35b157bc05a1aae9a59a2603a17e535d9410a49d0f9187f18039",
+      "size": 144392
+    },
+    "include/onnx/onnxruntime_ep_c_api.h": {
+      "mode": 420,
+      "sha256": "e94ac3490697bdb107844fa9d403952ee7136134132a057eae5c1207b57ce352",
+      "size": 102494
+    },
+    "include/onnx/onnxruntime_float16.h": {
+      "mode": 420,
+      "sha256": "88b242845d25981633a0bbd1c148e273cf8bfb016ea3f57c4af41a06530f72b0",
+      "size": 17991
+    },
+    "libonnxruntime.so.1": {
+      "mode": 420,
+      "sha256": "2d518e11c7767f9fdc4413bdbeb45acf30db504ff76a82fc19d9238a3f9f6c24",
+      "size": 22159232
+    },
+    "libonnxruntime_providers_shared.so": {
+      "mode": 420,
+      "sha256": "086ec1d5388f64153d9c63470d126693db9a182c8ce236d3a1119068471b8a0d",
+      "size": 14632
+    },
+    "licenses/dawn-headers-LICENSE": {
+      "mode": 420,
+      "sha256": "e2908f7576fb12be5bdb8480cddb0be62badb498cadb821d043aeaf01b0b0899",
+      "size": 1561
+    },
+    "licenses/dependencies/abseil_cpp-src/LICENSE": {
+      "mode": 420,
+      "sha256": "c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747",
+      "size": 11361
+    },
+    "licenses/dependencies/date-src/LICENSE.txt": {
+      "mode": 420,
+      "sha256": "c90f6c00fb961170560299cbda28ca2d45804913aa8b2a9f36dbb8e0028d6930",
+      "size": 1637
+    },
+    "licenses/dependencies/eigen3-src/COPYING.APACHE": {
+      "mode": 420,
+      "sha256": "03379001a7b12a2ec997a25554247d985270b353c10d5bafee9ac8d6519820b7",
+      "size": 11362
+    },
+    "licenses/dependencies/eigen3-src/COPYING.BSD": {
+      "mode": 420,
+      "sha256": "51928dce36213c5333ba3172e847d735d4c6e9b7ff2722a326c49067155b82eb",
+      "size": 1517
+    },
+    "licenses/dependencies/eigen3-src/COPYING.MINPACK": {
+      "mode": 420,
+      "sha256": "c87b7f8ee88f6195e91743820c00354833583aef091b72e2d4a49c8e28e798a0",
+      "size": 2193
+    },
+    "licenses/dependencies/eigen3-src/COPYING.MPL2": {
+      "mode": 420,
+      "sha256": "66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172",
+      "size": 16727
+    },
+    "licenses/dependencies/eigen3-src/COPYING.README": {
+      "mode": 420,
+      "sha256": "db640ff2bd90c6abd6a4d3fbb351e0ee4d555417cf840492054d1cbb2ea85644",
+      "size": 264
+    },
+    "licenses/dependencies/eigen3-src/LICENSE": {
+      "mode": 420,
+      "sha256": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
+      "size": 16725
+    },
+    "licenses/dependencies/flatbuffers-src/LICENSE": {
+      "mode": 420,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "size": 11358
+    },
+    "licenses/dependencies/gsl-src/LICENSE": {
+      "mode": 420,
+      "sha256": "4c21dc82a1c7186ea754fd59d504c00947953a3401fe8e24eaa44109ef8e2555",
+      "size": 1157
+    },
+    "licenses/dependencies/nlohmann_json-src/LICENSE.MIT": {
+      "mode": 420,
+      "sha256": "86b998c792894ccb911a1cb7994f7a9652894e7a094c0b5e45be2f553f45cf14",
+      "size": 1076
+    },
+    "licenses/dependencies/onnx-src/LICENSE": {
+      "mode": 420,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "size": 11358
+    },
+    "licenses/dependencies/protobuf-src/LICENSE": {
+      "mode": 420,
+      "sha256": "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d",
+      "size": 1732
+    },
+    "licenses/dependencies/pytorch_cpuinfo-src/LICENSE": {
+      "mode": 420,
+      "sha256": "8e7e60636c3aa0cb03571a1a841ce5697f9551ff92b3c426c2561613d15ade70",
+      "size": 1424
+    },
+    "licenses/dependencies/re2-src/LICENSE": {
+      "mode": 420,
+      "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+      "size": 1558
+    },
+    "licenses/dependencies/safeint-src/LICENSE": {
+      "mode": 420,
+      "sha256": "a46919cc8f01eb73f6e4b84af0d41b46b2a33b87c74e864279ef585079f82da4",
+      "size": 1066
+    },
+    "licenses/doe-LICENSE": {
+      "mode": 420,
+      "sha256": "66ccf82f3056418261f3a501d5ad03f156655171980c6d51a25a46495353c4d3",
+      "size": 1073
+    },
+    "licenses/example-LICENSE": {
+      "mode": 420,
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
+      "size": 1141
+    },
+    "licenses/models-LICENSE": {
+      "mode": 420,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "size": 11358
+    },
+    "licenses/onnx-core-LICENSE": {
+      "mode": 420,
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+      "size": 1073
+    },
+    "licenses/onnx-core-ThirdPartyNotices.txt": {
+      "mode": 420,
+      "sha256": "0e07b95f3a8d6230037707c5c4a2b554d12c4cb67369669ac255635528ffcee2",
+      "size": 325054
+    },
+    "licenses/onnx-provider-LICENSE": {
+      "mode": 420,
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+      "size": 1073
+    },
+    "licenses/onnx-provider-ThirdPartyNotices.txt": {
+      "mode": 420,
+      "sha256": "0e07b95f3a8d6230037707c5c4a2b554d12c4cb67369669ac255635528ffcee2",
+      "size": 325054
+    },
+    "licenses/webgpu-LICENSE": {
+      "mode": 420,
+      "sha256": "17420d366df90c474bd70ad474694956cdb7fc64be70387a49a45458c4152d22",
+      "size": 1534
+    },
+    "manifest.schema.json": {
+      "mode": 420,
+      "sha256": "61104184cf4962ba91948f441ad5d85f1d48a56ca087ff6182720f8a902c656a",
+      "size": 9518
+    },
+    "policy.json": {
+      "mode": 420,
+      "sha256": "6f24ebc39d12383a657628836e214b2f005dffdd41c6716d1cb5d12dfe599669",
+      "size": 2314
+    },
+    "provenance/application-build.json": {
+      "mode": 420,
+      "sha256": "4553e150c8032a25ac9c78ecb7b5c61258467a6edbbe2d9f2addb0dab1cff5da",
+      "size": 3504
+    },
+    "provenance/application.json": {
+      "mode": 420,
+      "sha256": "26376f8d4daeb0a2bce01dcadb6afeb433168e25666ad35680d078ce43d6a65b",
+      "size": 9572
+    },
+    "provenance/callbacks.json": {
+      "mode": 420,
+      "sha256": "06393de3c9558bfe54146f643abc53e6e1ef7802cd951230ef15268bff4367f5",
+      "size": 16578
+    },
+    "provenance/cpu-crosscheck.json": {
+      "mode": 420,
+      "sha256": "3b043f752819d30f51ec23a4c4d69764d65da1a089980fc534da091d5f63b262",
+      "size": 503
+    },
+    "provenance/lifecycle.json": {
+      "mode": 420,
+      "sha256": "9fc3db37ede37a65ec4f9a9aab20606d962bb39f1970c02721f9d3e646e0ab93",
+      "size": 16933
+    },
+    "provenance/native-build.json": {
+      "mode": 420,
+      "sha256": "5a97d46a4940b78f010443dc6cb9eb1e69496bb18fe66f42370dc85eeecb995e",
+      "size": 422
+    },
+    "provenance/native-qualification.json": {
+      "mode": 420,
+      "sha256": "7a19c1accead497cb2bb5df6654c7eb1fcc4a9a1b09e575a264fec482da5dd36",
+      "size": 78441
+    },
+    "provenance/provider-build.json": {
+      "mode": 420,
+      "sha256": "e4e4285f3511cb256befb8cfc059cb7c66ffabba5d03524d35dd073ae930a1e2",
+      "size": 5033
+    },
+    "provenance/reference.json": {
+      "mode": 420,
+      "sha256": "808666d38d1c9189d548c2c6fb6eeb1f11455b3f32da614a819bb1fbc048ce85",
+      "size": 70846
+    },
+    "provider.so": {
+      "mode": 420,
+      "sha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d",
+      "size": 6739768
+    },
+    "qualification.py": {
+      "mode": 420,
+      "sha256": "84658bf9546bf059f13ec2ea8efd9de78c3a1f51db2f71623eb60f3b062dfad6",
+      "size": 12906
+    },
+    "reference.f32": {
+      "mode": 420,
+      "sha256": "b85805bff755867ec86e9b0ec8ac368e5fc6af7247a42145db0bcff061fe1bd1",
+      "size": 4000
+    },
+    "release-inputs.json": {
+      "mode": 420,
+      "sha256": "315d78f42ab7b1b6d1443f142bdffb2c93b29813192ba6accf9e54c4f38bbe3c",
+      "size": 17725
+    },
+    "source/adapter.zig": {
+      "mode": 420,
+      "sha256": "97c29f03515ce774df07f828af912e94496604841781fe1a0a0b2ae29209f754",
+      "size": 5919
+    },
+    "source/application-provider.h": {
+      "mode": 420,
+      "sha256": "e0efd795836f6b2941b31e5ef91799455c7f7d32d720e32e4f191763da619943",
+      "size": 7677
+    },
+    "source/application.patch": {
+      "mode": 420,
+      "sha256": "84cd994eb9968c1a1a0f3cb665830563be37f37ccd8ce3b00a312c36af476a0c",
+      "size": 2398
+    },
+    "source/callbacks.cpp": {
+      "mode": 420,
+      "sha256": "870739538e6f3f1fea5be2b77f9aad0d9cb34ea393356f95f8eb95f22ee1c354",
+      "size": 17254
+    },
+    "source/doe_webgpu.h": {
+      "mode": 420,
+      "sha256": "ff5a5f07311f7439492e22fd2a9fb9185bb50bcc8b7124376af77f7dcf2e88c7",
+      "size": 274154
+    },
+    "source/external-context.c": {
+      "mode": 420,
+      "sha256": "66dab5774258ee32fb1f154aa5d8c283c2c7e648d3bcae65b9081407b8f7a75f",
+      "size": 7152
+    },
+    "source/lifecycle.cpp": {
+      "mode": 420,
+      "sha256": "30d4be30a27b223f506da0fdb29c9dc75c658a93913feba3e8955a460e2de823",
+      "size": 13581
+    },
+    "source/main.cpp": {
+      "mode": 420,
+      "sha256": "00c9888fdb08a1191fff4ae7f28430e9f4c9ee93b8346dda4cbec65c4b9a819f",
+      "size": 6487
+    },
+    "source/proc_wrappers.zig": {
+      "mode": 420,
+      "sha256": "57413386a0742f2e04f750fdd0225e3dcb6f893580ac5eb46800e25ff4c9ff62",
+      "size": 128839
+    },
+    "source/provider-context.patch": {
+      "mode": 420,
+      "sha256": "4b29f27ed212b970535722ce5903380b989a26e1520a5aff1f11248a68f223d6",
+      "size": 1687
+    },
+    "squeezenet.onnx": {
+      "mode": 420,
+      "sha256": "dec81a8684617770b3cf13fadc1d92565d1d453d23935fc6388b792d99c992bd",
+      "size": 4952956
+    },
+    "verify_evidence.py": {
+      "mode": 420,
+      "sha256": "3cb8b524324c7f1e66da414c3df07c28b70c7415df716669a11fc6f923b77615",
+      "size": 4678
+    }
+  },
+  "kind": "doe-onnx-vulkan-evaluation",
+  "qualification": {
+    "applicationProcesses": 2,
+    "fixtureDeadlineNs": 10000000000,
+    "processDeadlineSeconds": 120,
+    "runsPerProcess": 3,
+    "vendorId": 4098
+  },
+  "schemaVersion": 1,
+  "target": "linux-x64-amd-vulkan",
+  "version": "0.1.0-eval.1"
+}

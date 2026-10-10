@@ -1,0 +1,93 @@
+Doe ONNX Vulkan 0.1.0-eval.1: independent operator handoff
+
+Run this on a separate Linux x86_64 / AMD Vulkan machine. Use Python 3.11+,
+bubblewrap, compatible glibc/libstdc++, and your installed GPU driver. This is an
+evaluation of the downloaded integration, not a benchmark or support promise for
+an untested configuration. No Doe checkout or Python packages are needed.
+
+Acquisition
+
+Use the commit-pinned download URLs in Doe's installation guide:
+https://github.com/doerun/doe/blob/main/docs/onnx-vulkan-installation.md
+
+Download these files from that exact repository commit, not a mutable branch:
+
+  doe-onnx-vulkan-0.1.0-eval.1-linux-x64.tar.gz
+  SHA256SUMS
+  package-manifest.json
+  INSTALL.txt
+  onnx-vulkan-installation.md
+  OPERATOR.txt
+
+The qualified archive's expected SHA-256 is:
+9e469bbb7bbb02a4fcf40844553e873a05b14af2e1466e480b551724e0aec7d2
+
+Work in a new directory containing the downloaded archive. Check that exact
+archive digest before extracting code. The commands below use only the archive:
+
+  printf '%s  %s\n' \
+    9e469bbb7bbb02a4fcf40844553e873a05b14af2e1466e480b551724e0aec7d2 \
+    doe-onnx-vulkan-0.1.0-eval.1-linux-x64.tar.gz | sha256sum --check -
+  mkdir bootstrap
+  tar -xzf doe-onnx-vulkan-0.1.0-eval.1-linux-x64.tar.gz -C bootstrap
+  python3 bootstrap/doe_onnx.py install \
+    doe-onnx-vulkan-0.1.0-eval.1-linux-x64.tar.gz \
+    --sha256 9e469bbb7bbb02a4fcf40844553e873a05b14af2e1466e480b551724e0aec7d2 \
+    --prefix "$PWD/installed" > install.log 2>&1
+  python3 installed/doe_onnx.py verify > verify.log 2>&1
+  python3 installed/doe_onnx.py qualify --out "$PWD/qualification-results" \
+    > qualify.log 2>&1
+  python3 installed/doe_onnx.py run --out "$PWD/example-results" \
+    > run.log 2>&1
+
+Run each step separately, recording its exit status immediately with `echo $?`.
+On failure, stop, preserve the directory and logs, and return the failed result.
+Do not delete failed attempts or rerun into the same results directory. The
+negative controls intentionally fail inside qualification; the overall qualify
+command must pass only when those failures occur at the intended boundaries.
+After a passing qualify/run, replay the evidence on that same host:
+
+  python3 installed/verify_evidence.py --installation "$PWD/installed" \
+    --results "$PWD/qualification-results" > replay.log 2>&1
+
+The existing oracle checks complete SqueezeNet output. Expected output is not
+merely a printed class label. Acceptance also requires actual loaded Doe bytes,
+shader/submission records, WebGPU operator placement with CPU fallback disabled,
+initialization rejection/retry, callbacks, settled cleanup, and both controls.
+Do not relax tolerances, alter arithmetic, or replace failed GPU work with CPU work.
+
+Return evidence
+
+Retain the entire run directory, all exit statuses, stdout/stderr, nested result
+files, SPIR-V, operator profiles, and dependency identities. Return an archive of
+the logs and complete qualification-results/example-results directories, including
+partial directories from failed steps. Retain the original downloaded package and
+installation for replay; include their digest and manifest with the return.
+Do not return only the producer's supplied qualification.json or only a screenshot.
+
+Include an operator note stating:
+- Operator and affiliation, and confirmation this was a separate physical machine.
+- Download URL/date and archive SHA-256; whether producer checkout access was absent.
+- OS distribution, kernel, Python and bubblewrap versions, GPU and driver identity.
+- Host dependencies or permissions installed/changed and every failed attempt.
+- Exit statuses and any assistance needed; distinguish assisted from unassisted use.
+
+The package binds loaded library bytes. Keep those host libraries available for
+semantic replay; a driver update requires another qualification. No speed claim
+can be drawn from these instrumented identity runs.
+
+Independent application requirement
+
+After installation acceptance, use installed/source/application-provider.h and
+installed/source/main.cpp to evaluate one independently owned ONNX application.
+Keep its existing operators, model behavior, and numerical requirements. Record:
+- Application owner, pinned revision/model, integration diff, and real workload.
+- One unacceptable condition: deployment, startup, memory, diagnostics, or complete
+  operation latency, with the owner's acceptance criterion fixed before changes.
+- Current provider, independent reference, supported hardware, completion/cleanup
+  obligations, and the smallest reproduction of the condition.
+- Owner's decision to retain or reject the integration and a later reuse result.
+
+An application requirement selects a bounded engineering batch only after its
+cause is attributable to Doe. Installation success alone does not select pooling,
+shader optimization, another backend, or a browser campaign.

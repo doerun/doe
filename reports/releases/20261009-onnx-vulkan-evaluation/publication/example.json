@@ -1,0 +1,622 @@
+{
+  "externalAdoption": false,
+  "host": {
+    "kernel": "7.0.0-29-generic",
+    "machine": "x86_64",
+    "system": "Linux"
+  },
+  "isolation": {
+    "checkoutExposure": "none",
+    "hostDevices": "/dev",
+    "network": "unshared",
+    "systemReadOnlyRoots": [
+      "/usr",
+      "/bin",
+      "/lib",
+      "/lib64",
+      "/etc",
+      "/sys"
+    ],
+    "writableRoots": [
+      "/results",
+      "/tmp"
+    ]
+  },
+  "jobs": [
+    {
+      "artifacts": {
+        "application.profile_2026-10-09_21-21-35.json": {
+          "mode": 436,
+          "sha256": "67dc40923c6070df285affa7eb59570fbf186d1aaa88ef9b9ce5f675ae0b77b6",
+          "size": 52918
+        },
+        "doe-native-vulkan-010a67658183dbae56cb8739e878084f6461a74e67920e11a580f14de082366e.spv": {
+          "mode": 436,
+          "sha256": "010a67658183dbae56cb8739e878084f6461a74e67920e11a580f14de082366e",
+          "size": 4580
+        },
+        "doe-native-vulkan-118f61e8f7ca40c8f70c408d37edf11bed821da626739cbbbed24ad2660f31c7.spv": {
+          "mode": 436,
+          "sha256": "118f61e8f7ca40c8f70c408d37edf11bed821da626739cbbbed24ad2660f31c7",
+          "size": 13180
+        },
+        "doe-native-vulkan-2cf4f560ec3f30072ca73207ddb5f91d70ce8564866d90406d0ea0aed0195e3b.spv": {
+          "mode": 436,
+          "sha256": "2cf4f560ec3f30072ca73207ddb5f91d70ce8564866d90406d0ea0aed0195e3b",
+          "size": 6300
+        },
+        "doe-native-vulkan-32b6a24928c7db9ebb20a61ffc493169a46f5ee203d837e9f252d8b5eda37b22.spv": {
+          "mode": 436,
+          "sha256": "32b6a24928c7db9ebb20a61ffc493169a46f5ee203d837e9f252d8b5eda37b22",
+          "size": 13032
+        },
+        "doe-native-vulkan-36fac607e8bd335afd094196a1a75a813ed4ca4eacb654cb552534ab3b226fee.spv": {
+          "mode": 436,
+          "sha256": "36fac607e8bd335afd094196a1a75a813ed4ca4eacb654cb552534ab3b226fee",
+          "size": 7236
+        },
+        "doe-native-vulkan-55a476e589b6ec4c7342e62199f3dd9418ec7f2216fd8c0700eb0433dab27760.spv": {
+          "mode": 436,
+          "sha256": "55a476e589b6ec4c7342e62199f3dd9418ec7f2216fd8c0700eb0433dab27760",
+          "size": 4460
+        },
+        "doe-native-vulkan-7e411d4e2af1e22cff5d8ee4e77a8350f8779397723eeaf31bed6d646f2ea205.spv": {
+          "mode": 436,
+          "sha256": "7e411d4e2af1e22cff5d8ee4e77a8350f8779397723eeaf31bed6d646f2ea205",
+          "size": 12760
+        },
+        "doe-native-vulkan-bd2c54e1299fc4a5e75121f41e2a37bad07a72677d2f4facf2af159ed8dfd250.spv": {
+          "mode": 436,
+          "sha256": "bd2c54e1299fc4a5e75121f41e2a37bad07a72677d2f4facf2af159ed8dfd250",
+          "size": 11860
+        },
+        "doe-native-vulkan-c3d8962cd552160be165c4c4f2506f2773481b493751b7dc887086fc090f15c7.spv": {
+          "mode": 436,
+          "sha256": "c3d8962cd552160be165c4c4f2506f2773481b493751b7dc887086fc090f15c7",
+          "size": 7252
+        },
+        "doe-native-vulkan-c4011faa6a651962feb337b75eb7c646a230fca0b11f17ffa07e4add364b12ce.spv": {
+          "mode": 436,
+          "sha256": "c4011faa6a651962feb337b75eb7c646a230fca0b11f17ffa07e4add364b12ce",
+          "size": 4580
+        },
+        "doe-native-vulkan-cb8747b930c455ce9ecbfc843d43e65f0ab5dfe179d66a3ba1bd2b9c0abda27a.spv": {
+          "mode": 436,
+          "sha256": "cb8747b930c455ce9ecbfc843d43e65f0ab5dfe179d66a3ba1bd2b9c0abda27a",
+          "size": 7088
+        },
+        "doe-native-vulkan-dcbddab10a239ed9771d50b782803c4300be60d91ef41004e55464743602c0c1.spv": {
+          "mode": 436,
+          "sha256": "dcbddab10a239ed9771d50b782803c4300be60d91ef41004e55464743602c0c1",
+          "size": 4020
+        },
+        "native.jsonl": {
+          "mode": 436,
+          "sha256": "e4a61fdb9b656658418129f9c8b7f8d92c4d25c4b0f1ae92ee8fa30eaa3f2f53",
+          "size": 285888
+        },
+        "observations": {
+          "mode": 436,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size": 0
+        },
+        "stderr.log": {
+          "mode": 436,
+          "sha256": "dd4430fcc06fcae11b83a362d921e2be59beb57ef412a3d2b8407ff9e0b0961e",
+          "size": 24650
+        },
+        "stdout.log": {
+          "mode": 436,
+          "sha256": "4eacef2409d49d9f7b820d953d5800cc6264e55274b58e038d9180f11a575991",
+          "size": 1784
+        }
+      },
+      "command": [
+        "bwrap",
+        "--die-with-parent",
+        "--unshare-net",
+        "--clearenv",
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--ro-bind",
+        "/bin",
+        "/bin",
+        "--ro-bind",
+        "/lib",
+        "/lib",
+        "--ro-bind",
+        "/lib64",
+        "/lib64",
+        "--ro-bind",
+        "/etc",
+        "/etc",
+        "--ro-bind",
+        "/sys",
+        "/sys",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--tmpfs",
+        "/tmp",
+        "--ro-bind",
+        "/tmp/doe-onnx-release-consumer-k2f8w06x/installed",
+        "/application",
+        "--bind",
+        "/tmp/doe-onnx-release-consumer-k2f8w06x/example-results/application-0",
+        "/results",
+        "--chdir",
+        "/application",
+        "--setenv",
+        "CAMPAIGN_ARM",
+        "doe",
+        "--setenv",
+        "CAMPAIGN_ATOL",
+        "1e-06",
+        "--setenv",
+        "CAMPAIGN_BRIDGE",
+        "/application/bridge.so",
+        "--setenv",
+        "CAMPAIGN_CONTEXT",
+        "/application/context.so",
+        "--setenv",
+        "CAMPAIGN_MODE",
+        "qualification",
+        "--setenv",
+        "CAMPAIGN_NATIVE",
+        "/application/doe.so",
+        "--setenv",
+        "CAMPAIGN_OBSERVATIONS",
+        "/results/observations",
+        "--setenv",
+        "CAMPAIGN_PROFILE",
+        "/results/application.profile",
+        "--setenv",
+        "CAMPAIGN_PROVIDER",
+        "/application/provider.so",
+        "--setenv",
+        "CAMPAIGN_REFERENCE",
+        "/application/reference.f32",
+        "--setenv",
+        "CAMPAIGN_RTOL",
+        "0.0001",
+        "--setenv",
+        "CAMPAIGN_RUNS",
+        "3",
+        "--setenv",
+        "CAMPAIGN_WARMUP",
+        "0",
+        "--setenv",
+        "DOE_PROGRAM_IDENTITY_TRACE_PATH",
+        "/results/native.jsonl",
+        "--setenv",
+        "HOME",
+        "/tmp",
+        "--setenv",
+        "LD_DEBUG",
+        "libs",
+        "--setenv",
+        "MESA_SHADER_CACHE_DIR",
+        "/tmp/cache",
+        "--setenv",
+        "PATH",
+        "/usr/bin:/bin",
+        "--setenv",
+        "PYTHONDONTWRITEBYTECODE",
+        "1",
+        "--setenv",
+        "XDG_CACHE_HOME",
+        "/tmp/cache",
+        "--",
+        "/application/application"
+      ],
+      "execution": {
+        "actualProvider": "doe_vulkan",
+        "callCounts": {
+          "adapterGetInfo": 1,
+          "adapterHasFeature": 3,
+          "adapterInfoFreeMembers": 2,
+          "adapterRelease": 1,
+          "adapterRequestDevice": 1,
+          "bindGroupLayoutRelease": 149,
+          "bindGroupRelease": 149,
+          "bufferAddRef": 207,
+          "bufferGetConstMappedRange": 3,
+          "bufferGetMapState": 299,
+          "bufferGetMappedRange": 110,
+          "bufferGetSize": 218,
+          "bufferGetUsage": 296,
+          "bufferMapAsync": 3,
+          "bufferRelease": 402,
+          "bufferUnmap": 58,
+          "commandBufferRelease": 90,
+          "commandEncoderBeginComputePass": 35,
+          "commandEncoderCopyBufferToBuffer": 58,
+          "commandEncoderFinish": 90,
+          "commandEncoderRelease": 90,
+          "computePassEncoderDispatchWorkgroups": 149,
+          "computePassEncoderEnd": 35,
+          "computePassEncoderRelease": 35,
+          "computePassEncoderSetBindGroup": 149,
+          "computePassEncoderSetPipeline": 149,
+          "computePipelineAddRef": 26,
+          "computePipelineGetBindGroupLayout": 149,
+          "computePipelineRelease": 39,
+          "createInstance": 2,
+          "deviceAddRef": 1,
+          "deviceCreateBindGroup": 149,
+          "deviceCreateBuffer": 195,
+          "deviceCreateCommandEncoder": 90,
+          "deviceCreateComputePipelineAsync": 13,
+          "deviceCreateShaderModule": 13,
+          "deviceDestroy": 1,
+          "deviceGetAdapterInfo": 1,
+          "deviceGetFeatures": 1,
+          "deviceGetLimits": 1,
+          "deviceGetQueue": 1,
+          "devicePopErrorScope": 178,
+          "devicePushErrorScope": 178,
+          "deviceRelease": 2,
+          "instanceAddRef": 1,
+          "instanceRelease": 3,
+          "instanceRequestAdapter": 1,
+          "instanceWaitAny": 196,
+          "queueRelease": 1,
+          "queueSubmit": 90,
+          "queueWriteBuffer": 149,
+          "shaderModuleAddRef": 26,
+          "shaderModuleRelease": 39,
+          "supportedFeaturesFreeMembers": 1
+        },
+        "context": [
+          6,
+          4098,
+          5510,
+          4
+        ],
+        "dispatchCount": 149,
+        "loadedLibraries": [
+          {
+            "path": "/application/bridge.so",
+            "sha256": "7805b787d716df337f3b499e1217773d4ed826cbf43634da41789a51f14d907f"
+          },
+          {
+            "path": "/application/context.so",
+            "sha256": "5a9b546a2f2c8372885840690bf3394868437e0b6f095ce5d616e605c6cab180"
+          },
+          {
+            "path": "/application/doe.so",
+            "sha256": "5df419827ac98599ba4ad640d3bd28b14038f4e458ccd2c4e0ffe507cd9f82c7"
+          },
+          {
+            "path": "/application/libonnxruntime.so.1",
+            "sha256": "2d518e11c7767f9fdc4413bdbeb45acf30db504ff76a82fc19d9238a3f9f6c24"
+          },
+          {
+            "path": "/application/libonnxruntime_providers_shared.so",
+            "sha256": "086ec1d5388f64153d9c63470d126693db9a182c8ce236d3a1119068471b8a0d"
+          },
+          {
+            "path": "/application/provider.so",
+            "sha256": "c49287cbe19b8bf9b032ab7295a5e1efbe27c61024ddf624356227155326dc0d"
+          },
+          {
+            "path": "/lib64/ld-linux-x86-64.so.2",
+            "sha256": "bda779ea9e9ad234f60315477d7cfd0bdde861cd8ddd9df8cdaf62f18c4cec14"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libLLVM.so.21.1",
+            "sha256": "12dca1fc2d9f5d4ff35315fc2aa3a97b615b41ec6a71d3ce545efb62c075d902"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libVkLayer_MESA_device_select.so",
+            "sha256": "98b7eed51becfcc8ca42ee4d466b5a4cebf0c1fa54361f7d08a0cb50c1dda45a"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libX11-xcb.so.1",
+            "sha256": "f56bf81443a88ce1167bb4f8188a63f1579e35dd31e8b3260f5d4fce7de90b05"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libXau.so.6",
+            "sha256": "2b742de65acd00f154ed156720af66c0c0af9a58360ba041f25a41e2f775fab5"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6",
+            "sha256": "24beecbb0faf600d1a646b5edfc8c144da6f2965cb427598f4e17edc1285a733"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libbsd.so.0",
+            "sha256": "c71b8a0d7e94c5e34f6c328c5dd1ba7f325d3300c97a54a7c69ef9a6c2caa8b3"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+            "sha256": "85e64f97e348786a8fb4d9f3d52fec289e2fb86bba20f0731dfe61990525e0f7"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libdisplay-info.so.3",
+            "sha256": "b3822cd8ca06feaf57da22fc4e5c905c2cb873f5bc2664e53a3c5f2cf060cb27"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libdl.so.2",
+            "sha256": "59d725ca30596a9863f4fa2552a7125f834842abc86b40890231c129358965d2"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libdrm.so.2",
+            "sha256": "c8be7d3863453898666977c12b0b392014a1c728d84215d885d574882d6e7b89"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libdrm_amdgpu.so.1",
+            "sha256": "edc5af5a40623befde7f1214950cb0046e04e9a39f925e6959e71f01d2d34d9c"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libedit.so.2",
+            "sha256": "438090e1cd463d9f89c9259ce9e99f229eae56c857b5e525d581e338f61aa1ce"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libelf.so.1",
+            "sha256": "f77db7b4cfa02c98aa5918caf1f02b6cf37a5998e2e5cc8e43e664dbb72c87fa"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1",
+            "sha256": "2e5f66e2784c2746775567ff9916f6e7503182a8f1f2deb8ca729dfc1463849f"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libffi.so.8",
+            "sha256": "1a0dc86f787f73e025a6e521056360afcbe70f2a82cd808132fefc2b4ee95daa"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+            "sha256": "9d339ecb409578d6a5d587e6c537a8f9589b8a13fefba30d167433a4b5758bee"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+            "sha256": "1c488db6f4fe8cecb72456bc018de000b7a9b539c2994864b0416b5e8371b3d8"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libmd.so.0",
+            "sha256": "f115fa619f586e47ddfbec21bfd50069fbe5d21f388f8d9a07a984cb075d7efa"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libpthread.so.0",
+            "sha256": "1327fc40710691dbd94e88b6cf4efce27fefe8fbb93f7d1164a75b4dccaea696"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/librt.so.1",
+            "sha256": "9f3cc59207bcaaac74aaf7aca961f4816f0f4d945e4bd1c3cb98ec516becf161"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6",
+            "sha256": "5bb0d21308f123b6ad46c6f35b42cedfcb8d6d439a53aa3dae04d880aaffdde3"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libtinfo.so.6",
+            "sha256": "085dbbe5dc38619276bdd0af37ae588969b1308baded09a2990ce8824a602912"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libvulkan.so.1",
+            "sha256": "def4af45e9e5784cf65eaaaa289530a5c73546b01015da4c0920ef0a144fe189"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libvulkan_asahi.so",
+            "sha256": "726d307718ce540e6804ee3aff4d60faf5232199b1110e50a64d20ea8210996d"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libvulkan_gfxstream.so",
+            "sha256": "8db10a04308b81ddbff866a2d8782d3ea7e9da6f6aa992dddbafcb24d36899b9"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libvulkan_intel.so",
+            "sha256": "83940b0fc121f7f217d5a6bd075a3faf83cc2af38f763a1f34d810f0e332d4a1"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libvulkan_intel_hasvk.so",
+            "sha256": "2b6da5e005867cc97cd183ec7f42095354c780b7b58154369bf24738260d5472"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libvulkan_lvp.so",
+            "sha256": "c71b513e1dd12f7eb2ad0ea76fdea379e213b0b9331d8e10c5127f2d0723ca81"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libvulkan_nouveau.so",
+            "sha256": "e46bf2ff68852879a5e0b30149b4ddb7ee10f07f1bf3039366ac512ec3c672b6"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libvulkan_radeon.so",
+            "sha256": "0949baaa43f5ea34fc785f28f31863ca5ea4949478fae96b37c37675a489f830"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libvulkan_virtio.so",
+            "sha256": "1bbe1fcac5d0e7ba9f70e98fb6699da08757ec36599f00059c53d2ad1772bf2d"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libwayland-client.so.0",
+            "sha256": "f27b9eecd96d76ae49ec9f7d4da17dcc43df3411ef3d432ce56d710c8b62930c"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libxcb-dri3.so.0",
+            "sha256": "d2f0488a28a351718192c01bba15f60556f514db555dfbce9a132dedd1401e98"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libxcb-present.so.0",
+            "sha256": "085bc629d45125f8c3b0f09f9c37ee65d35b1ea55e1f047cffd6aef4ce218b5a"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libxcb-randr.so.0",
+            "sha256": "a9444026ba3c927a917ff5a0ce47318bed09ab8f9382fe231c72b33da4ec8bbc"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libxcb-shm.so.0",
+            "sha256": "58fcb847e2009affbd7eeb1f6d39949f29ccc153f230e0b0d23de00d2b5c1353"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libxcb-sync.so.1",
+            "sha256": "bf494083f05bc427135042b5cdaa5bf5fbe0886f34f611151dde0056257022c9"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0",
+            "sha256": "37c933b3e89f66330a930207b3133ce5b2c7aade777c7711b70945cc7d4b2333"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1",
+            "sha256": "6af94be329e17e57f1cc0f5e4afb5bdfe669a5168accdc31b03274110b937b41"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libxml2.so.16",
+            "sha256": "4e8990287f9c900905e24d94fa1945cf6fa94efda100ab437c0e0520ba3663a0"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libxshmfence.so.1",
+            "sha256": "8b4406ff7f9f2b2830e6d135f9e7ffe991d32832b8fc3569fed189517b557d2b"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libz.so.1",
+            "sha256": "47b61967895b30e8c0c6818dd633ffeb87711cf637c688f981896f0dd84ce23b"
+          },
+          {
+            "path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1",
+            "sha256": "060eeb79531d435306665fd78329d8a9dd579f95876c5960bb67937825362a80"
+          }
+        ],
+        "operatorNames": [
+          "Transpose",
+          "Conv",
+          "MaxPool",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "MaxPool",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "MaxPool",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "GlobalAveragePool",
+          "Softmax",
+          "Transpose",
+          "Transpose",
+          "Conv",
+          "MaxPool",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "MaxPool",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "MaxPool",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "GlobalAveragePool",
+          "Softmax",
+          "Transpose",
+          "Transpose",
+          "Conv",
+          "MaxPool",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "MaxPool",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "MaxPool",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "Conv",
+          "Conv",
+          "Concat",
+          "Conv",
+          "GlobalAveragePool",
+          "Softmax",
+          "Transpose"
+        ],
+        "submissionCount": 90
+      },
+      "exitCode": 0,
+      "failure": null,
+      "name": "application-0",
+      "passed": true
+    }
+  ],
+  "kind": "doe-onnx-vulkan-installation",
+  "manifestSha256": "2d2c1e9ff78431c6141fec4dcd0dc157e19c3bb6c87dca9a532ec42d3ec5e3c9",
+  "mode": "run",
+  "passed": true,
+  "performanceClaim": false,
+  "schemaVersion": 1,
+  "version": "0.1.0-eval.1"
+}

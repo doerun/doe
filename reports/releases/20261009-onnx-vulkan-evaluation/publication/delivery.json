@@ -1,0 +1,36 @@
+{
+  "archive": {
+    "path": "bench/out/onnx-vulkan-release/20261009/release-two/doe-onnx-vulkan-0.1.0-eval.1-linux-x64.tar.gz",
+    "sha256": "9e469bbb7bbb02a4fcf40844553e873a05b14af2e1466e480b551724e0aec7d2",
+    "size": 19229485
+  },
+  "externalAdoption": false,
+  "externalReproduction": false,
+  "files": {
+    "build-one.json": "f99b1713c283956fe65da162bbc69879d5762c13071f4fd17b3e1863735ebb32",
+    "build-two.json": "f99b1713c283956fe65da162bbc69879d5762c13071f4fd17b3e1863735ebb32",
+    "evidence.tar.gz": "cff3d2c05d717482eb6ca328cbcac04b192f6c1d32f67347b4b63daee957660d",
+    "example.json": "d3f4b77b7da98bbd10dd1affe1e1acf826bfcac4aec0256cb3a16b38d126b37e",
+    "installation.json": "67236f596b8ef77f0be93f2e145d2c8882364ab514ae8c9dc5ded3eadc801be1",
+    "installation.log": "f3c93ca1b733afdb28b4362d797e9612d5e72421e13725c95707334cb374169e",
+    "package-manifest.json": "2d2c1e9ff78431c6141fec4dcd0dc157e19c3bb6c87dca9a532ec42d3ec5e3c9",
+    "qualification.json": "2b0bf986ac58da3cfb20167c09291154a7efcd8b94aff305179dcbc957449c52"
+  },
+  "kind": "doe-onnx-vulkan-delivery",
+  "manifestSha256": "2d2c1e9ff78431c6141fec4dcd0dc157e19c3bb6c87dca9a532ec42d3ec5e3c9",
+  "performanceClaim": false,
+  "producerSourceHashes": {
+    "bench/external-projects/onnx-vulkan-release/build.py": "2c6f8a069c8e7e4b3997c22730640470e8b3c835d177b0eafeaf3185b72a043d",
+    "bench/external-projects/onnx-vulkan-release/check_init.py": "1681152ccea8ccce8ae4793b244cd54404c7424234e750bcbbfb1ceeb1436d32",
+    "bench/external-projects/onnx-vulkan-release/distribution.py": "f0a315acf25828ccdc9b9d0e6a947019daa1879540b2609def64db873d3a382b",
+    "bench/external-projects/onnx-vulkan-release/doe_onnx.py": "3ce3894c0001e4b09262feef54efb230ec056b23b7c5cbb699559f21c4bb713b",
+    "bench/external-projects/onnx-vulkan-release/qualification.py": "84658bf9546bf059f13ec2ea8efd9de78c3a1f51db2f71623eb60f3b062dfad6",
+    "bench/external-projects/onnx-vulkan-release/retain.py": "b9438bc1736bb4cb41b10858537fea1b4298127a68206de787f0d192a49e166b",
+    "bench/external-projects/onnx-vulkan-release/verify_evidence.py": "3cb8b524324c7f1e66da414c3df07c28b70c7415df716669a11fc6f923b77615"
+  },
+  "qualificationPassed": true,
+  "reproducible": true,
+  "schemaVersion": 1,
+  "sourceBaseCommit": "0a19919d74712a3c8988409cad4a12b817321173",
+  "version": "0.1.0-eval.1"
+}
