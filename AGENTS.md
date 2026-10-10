@@ -119,9 +119,11 @@ Switching to Metal requires an explicit prioritization decision and handoff;
 D3D12 remains deferred. Existing regression checks do not constitute parallel
 optimization campaigns. The pinned ONNX Vulkan integration and local isolated
 installation already have evidence; start at `docs/onnx-vulkan-installation.md`.
-Prioritize independent installation, one real consumer requirement, and retained
-use. Correctness, packaging, and independently useful engineering do not require
-customer payment. Compiler adoption is independent of runtime adoption; select
+Doppler is the first engineering customer: prioritize unchanged generation through
+Vulkan, repair demonstrated correctness failures, then select one general improvement
+from measured complete-generation costs. Independent correctness references and a
+competent Dawn control provide technical evidence; external recruitment is not an
+engineering gate. Independent installation and retained use remain adoption evidence. Compiler adoption is independent of runtime adoption; select
 new compiler opportunities explicitly and keep closed browser experiments closed.
 
 ## Core principles (adopted)

@@ -29,6 +29,7 @@ fn loadRequiredProc(comptime FnType: type, comptime symbol_name: [:0]const u8) F
 
 const BufferMapSyncResult = struct {
     done: bool = false,
+    abandoned: bool = false,
     status: abi_base.WGPUMapAsyncStatus = 0,
 };
 
@@ -44,6 +45,7 @@ fn buffer_map_sync_callback(
     const result: *BufferMapSyncResult = @ptrCast(@alignCast(raw));
     result.status = status;
     result.done = true;
+    if (result.abandoned) native_helpers.alloc.destroy(result);
 }
 
 pub export fn wgpuCreateInstance(a0: ?*anyopaque) callconv(.c) abi_base.WGPUInstance {
@@ -461,23 +463,33 @@ pub export fn doeBufferMapSyncFlat(
     offset: usize,
     size: usize,
 ) callconv(.c) abi_base.WGPUMapAsyncStatus {
-    var result = BufferMapSyncResult{};
+    if (instance == null) return 0;
+    const result = native_helpers.alloc.create(BufferMapSyncResult) catch return 0;
+    result.* = .{};
     const info = abi_descriptor.WGPUBufferMapCallbackInfo{
         .nextInChain = null,
         .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
         .callback = buffer_map_sync_callback,
-        .userdata1 = @ptrCast(&result),
+        .userdata1 = @ptrCast(result),
         .userdata2 = null,
     };
     const future = native.doeNativeBufferMapAsync(buffer, mode, offset, size, info);
-    if (future.id == 0) return 0;
-    const process_events = loadRequiredProc(ptypes.FnWgpuInstanceProcessEvents, "wgpuInstanceProcessEvents");
+    if (future.id == 0) {
+        native_helpers.alloc.destroy(result);
+        return 0;
+    }
     const start_ns = std.time.nanoTimestamp();
     while (!result.done) {
-        process_events(instance);
-        if (std.time.nanoTimestamp() - start_ns >= BUFFER_MAP_SYNC_TIMEOUT_NS) return 0;
+        native.doeNativeInstanceProcessEvents(instance);
+        if (!result.done and std.time.nanoTimestamp() - start_ns >= BUFFER_MAP_SYNC_TIMEOUT_NS) {
+            // The event owns callback storage after the synchronous caller leaves.
+            result.abandoned = true;
+            return 0;
+        }
     }
-    return result.status;
+    const status = result.status;
+    native_helpers.alloc.destroy(result);
+    return status;
 }
 
 pub export fn doeBufferMapReadCopyUnmapFlat(
@@ -548,19 +560,12 @@ pub export fn doeBufferMapReadCopyUnmapFlat(
         }
     }
 
-    var result = BufferMapSyncResult{};
-    const info = abi_descriptor.WGPUBufferMapCallbackInfo{
-        .nextInChain = null,
-        .mode = abi_descriptor.WGPUCallbackMode_AllowProcessEvents,
-        .callback = buffer_map_sync_callback,
-        .userdata1 = @ptrCast(&result),
-        .userdata2 = null,
-    };
+    const native_buffer = native_helpers.cast(native_types.DoeBuffer, buffer) orelse return 0;
+    const device = native_buffer.device_ref orelse native_buffer.dev orelse return 0;
+    const adapter = device.adapter orelse return 0;
+    const instance = adapter.instance orelse return 0;
     const map_started_ns = if (wants_breakdown) std.time.nanoTimestamp() else 0;
-    const future = native.doeNativeBufferMapAsync(buffer, mode, offset, size, info);
-    if (future.id == 0 or !result.done or result.status != abi_base.WGPUMapAsyncStatus_Success) {
-        return 0;
-    }
+    if (doeBufferMapSyncFlat(@ptrCast(instance), buffer, mode, offset, size) != abi_base.WGPUMapAsyncStatus_Success) return 0;
     if (breakdown_ptr) |breakdown| {
         breakdown[BREAKDOWN_MAP_INDEX] = @intCast(std.time.nanoTimestamp() - map_started_ns);
     }

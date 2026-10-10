@@ -499,33 +499,9 @@ napi_value native_direct_buffer_map_async(napi_env env, napi_callback_info info)
         native_direct_queue_mark_done(env, queue_obj);
     }
 
-    BufferMapResult result = {0};
-    WGPUBufferMapCallbackInfo cb_info = {
-        .nextInChain = NULL,
-        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
-        .callback = buffer_map_callback,
-        .userdata1 = &result,
-        .userdata2 = NULL,
-    };
     const uint64_t map_started_ns = monotonic_now_ns();
-    if (pfn_doeNativeBufferMapAsync) {
-        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
-        if (future.id == 0 || !result.done) NAPI_THROW(env, "doeNativeBufferMapAsync unavailable");
-        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
-            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "doeNativeBufferMapAsync failed", result.status, result.message);
-        }
-    } else if (pfn_wgpuBufferMapAsync2) {
-        WGPUFuture future = pfn_wgpuBufferMapAsync2(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
-        if (future.id == 0) NAPI_THROW(env, "bufferMapAsync future unavailable");
-        if (!process_events_until(inst, &result.done, current_timeout_ns(env))) {
-            return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out", result.status, result.message);
-        }
-        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
-            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
-        }
-    } else {
-        NAPI_THROW(env, "bufferMapAsync unavailable");
-    }
+    if (!map_buffer_sync(env, inst, buffer, (uint64_t)mode, (size_t)offset, (size_t)size)) return NULL;
+
     native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_QUEUE_FLUSH_MS, map_queue_flush_ms);
     native_direct_set_double_prop(env, this_arg, DOE_DIRECT_DIAG_MAP_ASYNC_MS, native_direct_elapsed_ms(map_started_ns));
     if (buffer_cache) buffer_cache->map_mode = mode;
@@ -718,30 +694,9 @@ napi_value native_direct_buffer_map_read_copy_unmap(napi_env env, napi_callback_
 
     /* map */
     WGPUInstance inst = buffer_cache ? buffer_cache->instance : native_direct_unwrap_external_prop(env, this_arg, DOE_DIRECT_INSTANCE);
-    BufferMapResult result = {0};
-    WGPUBufferMapCallbackInfo cb_info = {
-        .nextInChain = NULL,
-        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
-        .callback = buffer_map_callback,
-        .userdata1 = &result,
-        .userdata2 = NULL,
-    };
     const uint64_t map_started_ns = monotonic_now_ns();
-    if (pfn_doeNativeBufferMapAsync) {
-        WGPUFuture future = pfn_doeNativeBufferMapAsync(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
-        if (future.id == 0 || !result.done) NAPI_THROW(env, "mapReadCopyUnmap: map failed");
-    } else if (pfn_wgpuBufferMapAsync2) {
-        WGPUFuture future = pfn_wgpuBufferMapAsync2(buffer, (uint64_t)mode, (size_t)offset, (size_t)size, cb_info);
-        if (future.id == 0) NAPI_THROW(env, "mapReadCopyUnmap: map future unavailable");
-        if (!process_events_until(inst, &result.done, current_timeout_ns(env))) {
-            NAPI_THROW(env, "mapReadCopyUnmap: map timed out");
-        }
-    } else {
-        NAPI_THROW(env, "mapReadCopyUnmap: map unavailable");
-    }
-    if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
-        NAPI_THROW(env, "mapReadCopyUnmap: map failed");
-    }
+    if (!map_buffer_sync(env, inst, buffer, (uint64_t)mode, (size_t)offset, (size_t)size)) return NULL;
+
     map_ms = native_direct_elapsed_ms(map_started_ns);
 
     /* copy mapped data into a V8-owned ArrayBuffer */

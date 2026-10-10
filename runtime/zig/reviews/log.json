@@ -27959,6 +27959,52 @@
         "src/backend/vulkan",
         "src/native/vulkan"
       ]
+    },
+    {
+      "context": [
+        {
+          "path": "packages/doe-gpu/test/integration/test-integration-native-buffer-map.js",
+          "sha256": "d127e2f74b001a1eb84d775fa90f08c13e657dff7981de82a6b0ca034b03cee2"
+        },
+        {
+          "path": "runtime/bridge/webgpu-addon/doe_napi_helpers.c",
+          "sha256": "3c92c475165b9bb2540add6de34db2464109c21fad99736f8be69d6c760f896e"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "reports/maintenance/20261010-doppler-map-callbacks/README.md",
+          "sha256": "a07d0d324b4118559770577461e45d6617c320bfc40014100a09e4446a936c2b"
+        },
+        {
+          "path": "reports/maintenance/20261010-doppler-map-callbacks/buffer-map-fixed.log",
+          "sha256": "a311db079783667f00200326311d80c7cec4c007d86cb843769972184cbec8a4"
+        },
+        {
+          "path": "reports/maintenance/20261010-doppler-map-callbacks/runtime-tests.log",
+          "sha256": "84d6f0db97377d2546b760f221acadd6bebd846696b5aa378f92ab1cbeb14e97"
+        }
+      ],
+      "findings": [
+        "Scope is the synchronous mapping adapter and its Node consumers; unrelated ABI wrappers are not independently qualified by this regression. Flat-adapter timeout and general instance abandonment remain unqualified."
+      ],
+      "inputHash": "ea6d84455266757973b96833f28b6e8c3ebe118afb2100815955f6d0c9c3c455",
+      "level": "file",
+      "nextAction": "Attribute dominant complete-generation costs on the repaired baseline and investigate the retained Doppler deferred-destruction warning before promoting settled cleanup; freeze new acceptance before implementing an optimization.",
+      "prerequisites": [],
+      "resolvedFindings": [
+        "doeBufferMapReadCopyUnmapFlat required immediate delivery despite requesting AllowProcessEvents. It now delegates to the native synchronous mapping adapter, which pumps native instance events and owns callback storage beyond timeout. Vulkan readback, frozen Doppler outputs, native rendering and command lifetime pass."
+      ],
+      "reviewId": "dropin_mapping_callback_repair_20261010",
+      "reviewedAt": "2026-10-10T02:54:15.392054+00:00",
+      "reviewer": "codex",
+      "sourceCommit": "acd45ecd2128ec9808936c7dc5eb8a0c8fdb1c6d",
+      "status": "in_progress",
+      "summary": "Review started; complete examination is pending.",
+      "supersedes": null,
+      "targets": [
+        "src/dropin/dropin_abi_procs.zig"
+      ]
     }
   ],
   "schemaVersion": 1

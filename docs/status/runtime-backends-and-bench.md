@@ -1,5 +1,20 @@
 # Doe status: runtime backends and benchmarks
 
+## Doppler-driven Vulkan engineering
+
+The [current-source mapping repair](../../reports/maintenance/20261010-doppler-map-callbacks/README.md)
+restores synchronous host readback after deferred callback delivery. Frozen Doppler
+generation cases, cancellation/reuse and native rendering/command lifetime checks
+pass on the tested Vulkan host. A pre-existing Doppler deferred-destruction warning
+remains visible during unload; do not promote fully settled application cleanup.
+
+Doppler is the first engineering customer. The next performance selection must
+attribute dominant complete-generation costs before changing the compiler or
+runtime. Buffer creation/destruction and submission appear in diagnostic profiles;
+no speed advantage or new optimization acceptance is established. External
+recruitment is separate adoption work, not an engineering gate. Closed reuse
+experiments stay closed and Vulkan remains the active backend.
+
 ## ONNX Vulkan evaluation delivery
 
 The [evaluation release](../../reports/releases/20261009-onnx-vulkan-evaluation/README.md)
@@ -16,7 +31,8 @@ This adds public byte custody without rebuilding binaries or changing the origin
 local qualification. External operator reproduction, additional hosts and voluntary
 retention remain open. No application advantage is promoted; prior campaign
 verdicts remain preserved. The operator handoff is ready for any eligible external
-consumer; no requirement or successor optimization campaign has been selected.
+consumer. The Doppler engineering work above is selected independently; no new
+ONNX optimization campaign is selected.
 
 ## Bounded ONNX Vulkan device lifecycle qualification
 

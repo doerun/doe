@@ -44,3 +44,10 @@ semantics, real device loss and interruption of submitted GPU work. No timing po
 performance advantage, compiler transformation, backend expansion or browser replacement
 is promoted. Earlier reports keep their exact source/binary bindings; replay their
 original verifiers against their retained source base instead of substituting current code.
+
+Synchronous Node mapping and flattened map/copy/unmap adapters must process the
+owning instance until the requested callback is delivered. They retain callback
+storage past a timeout, releasing it on eventual delivery instead of leaving a
+stack pointer in the pending event. The [Doppler mapping repair](../reports/maintenance/20261010-doppler-map-callbacks/README.md)
+qualifies this bridge correction on Vulkan, including timeout followed by delivery.
+No ABI fields or callback modes change. General instance abandonment remains open.

@@ -1,0 +1,49 @@
+[420.7ms][Platform] No specific platform matched for adapter (vendor=AMD, arch=vulkan), falling back to generic
+[GPU] AMD vulkan, f16/subgroups, 4.0GB
+[472.6ms][Pipeline] Execution v1 enabled (steps=35, kernelPathInline=yes, pipelineInline=no)
+[472.8ms][Config] Using manifest-first config (source of truth)
+[475.4ms][Pipeline] Resolved session applied (gemma-3-270m-it-q4k-ehf16-af32): batchSize=1, stopCheckMode=batch, readbackInterval=1, disableCommandBatching=false
+[476.3ms][Pipeline] KernelPath: gemma-3-270m-it-q4k-ehf16-af32-execution-inline (15 decode steps, 10 kernels, source=execution-v1)
+[476.5ms][Pipeline] 18L/640H/4heads (256dim), kernelPath=gemma-3-270m-it-q4k-ehf16-af32-execution-inline
+[476.9ms][Tokenizer] Loading bundled tokenizer from tokenizer.json
+[747.1ms][Tokenizer] HuggingFace model.type="BPE", using type="bpe"
+[1053.0ms][Tokenizer] Loaded HuggingFace 262145 tokens (bpe), 6413 special patterns, 514906 merges
+[1053.5ms][Pipeline] Tokenizer vocabSize=262145 differs from model=262144, using model size
+[1060.6ms][Pipeline] KV cache allocated: kvDtype=f16, maxSeqLen=4096, layout=contiguous, modelMaxSeqLen=32768, requestedKvDtype=f16, requestedMaxSeqLen=4096
+[1061.7ms][Pipeline] Execution plan: active=primary, dtype=f32, kernelPath=gemma-3-270m-it-q4k-ehf16-af32-execution-inline
+[1103.0ms][ShardCache] Custom shard loader configured
+[1103.3ms][Loader] Initializing...
+[1171.2ms][HeapManager] Allocated segment 0: 1024MB
+[1171.4ms][HeapManager] Segmented heap: 1GB per segment
+[1171.4ms][HeapManager] Initialized with strategy: SEGMENTED
+[1171.5ms][Loader] Initialized (f16, subgroups)
+[1171.9ms][Loader] Loading: gemma-3-270m-it-q4k-ehf16-af32
+[1172.9ms][Loader] [0.0s] Memory (start): | RSS=342.04 MB (heap=91.58 MB/172.66 MB, external=2.00 GB, arrayBuffers=2.00 GB) | GPU=0 B (0 active, 0 pooled, peak=0 B) | ShardCache=0 B (0 shards) | Layers=0, GPUBuffers=0
+[1173.4ms][Loader] Dense model on discrete GPU - performance limited. Consider MoE model.
+[1275.1ms][Loader] Embeddings tensor loaded: name=model.embed_tokens.weight, hasShape=true, shape=[262144,640], isWeightBuffer=true
+[1275.4ms][Loader] Layers: 0-17
+[1444.7ms][Loader] Layers: 18 complete (0.17s)
+[1446.5ms][Loader] Complete: 380.86 MB in 0.27s (1.37 GB/s)
+[1447.2ms][Loader] [0.3s] Memory (complete): | RSS=379.13 MB (heap=95.62 MB/127.16 MB, external=1.04 GB, arrayBuffers=1.03 GB) | GPU=514.27 MB (236 active, 12 pooled, peak=514.27 MB) | ShardCache=0 B (0 shards) | Layers=18, GPUBuffers=236
+[1476.3ms][Pipeline] Model loaded successfully (1006ms)
+{"lane":"doe","stage":"loaded","identity":{"vendor":"AMD","architecture":"vulkan","device":"Radeon 8060S Graphics (RADV STRIX_HALO)","description":"Radeon 8060S Graphics (RADV STRIX_HALO)"},"loadMs":1098.449951}
+[1498.4ms][KernelSelect] matmul variant=f16w_f32a_tiled reason=path_override
+[1509.7ms][KernelSelect] attention variant=prefill_head256_f16kv reason=path_override:tiled_small
+[1689.3ms][ExpertCache] Cache cleared
+[1695.0ms][Pipeline] Unloaded
+[1695.6ms][GPU] Device lost: GPUDevice.destroy() was called, Reason: destroyed
+{
+  name: 'Error',
+  message: 'flushAndMapSync: doeNativeBufferMapAsync unavailable',
+  stack: 'Error: flushAndMapSync: doeNativeBufferMapAsync unavailable\n' +
+    '    at Object.bufferMapAsync (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doe/src/vendor/webgpu/index.js:1926:15)\n' +
+    '    at DoeGPUBuffer.mapAsync (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doe/src/vendor/webgpu/shared/full-surface.js:748:23)\n' +
+    '    at DoeComputeGPUBuffer.mapAsync (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doe/src/vendor/webgpu/compute.js:51:22)\n' +
+    '    at BufferPool.readBufferSlice (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/memory/buffer-pool.js:635:21)\n' +
+    '    at BufferPool.readBuffer (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/memory/buffer-pool.js:591:17)\n' +
+    '    at readBuffer (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/memory/buffer-pool.js:840:25)\n' +
+    '    at PipelineGenerator._prefill (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/inference/pipelines/text/generator/prefill-runtime.js:643:38)\n' +
+    '    at async PipelineGenerator._prefillPromptToLogits (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/inference/pipelines/text/generator/prefill-runtime.js:98:16)\n' +
+    '    at async PipelineGenerator._generateTokensInternal (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/inference/pipelines/text/generator/decode-runtime.js:188:58)\n' +
+    '    at async PipelineGenerator._generateTokensInternal (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/inference/pipelines/text/generator.js:467:12)'
+}

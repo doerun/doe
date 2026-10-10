@@ -904,6 +904,7 @@ void uncaptured_error_native_callback(uint32_t error_type, WGPUStringView messag
 void lost_native_callback(uint32_t reason, const char* message_ptr, size_t message_len, void* userdata);
 
 /* Map/queue callbacks */
+int map_buffer_sync(napi_env env, WGPUInstance inst, WGPUBuffer buffer, uint64_t mode, size_t offset, size_t size);
 void buffer_map_callback(uint32_t status, WGPUStringView message, void* userdata1, void* userdata2);
 void queue_work_done_callback(uint32_t status, WGPUStringView message, void* userdata1, void* userdata2);
 void adapter_callback(uint32_t status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* userdata2);

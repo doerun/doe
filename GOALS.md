@@ -97,8 +97,13 @@ evidence. The versioned package has local isolated-installation acceptance.
 Material replacement advantage, broader compatibility, another operator's
 reproduction, and retained adoption remain unestablished.
 
-Next make that package available for independent installation, obtain one real
-consumer requirement, and select further engineering against agreed acceptance.
+The exact evaluation package is already publicly distributed. Next use Doppler
+as the first engineering customer: qualify unchanged generation on current Vulkan,
+identify dominant complete-generation costs, and select one general compiler or
+runtime improvement against frozen acceptance. Independent numerical references
+and a competent Dawn control provide technical evidence on existing hardware;
+external recruitment is not an engineering gate. Transfer the demonstrated
+mechanism to ONNX or another unrelated application before broadening its claim.
 Do not repeat initial substitution discovery or expand the experimental plugin's
 operator stack by default. Discovery and technical release are distinct gates;
 correctness, packaging, and useful engineering do not require a paying customer.

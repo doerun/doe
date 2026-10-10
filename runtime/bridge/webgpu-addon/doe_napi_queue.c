@@ -1912,26 +1912,8 @@ napi_value doe_compute_dispatch_flush_and_map_sync(napi_env env, napi_callback_i
     napi_get_value_int64(env, _args[5], &size_i);
     if (!queue || !buf) NAPI_THROW(env, "flushAndMapSync requires queue and buffer");
     if (pfn_doeNativeQueueFlush) pfn_doeNativeQueueFlush(queue);
-    BufferMapResult result = {0};
-    WGPUBufferMapCallbackInfo cb_info = {
-        .nextInChain = NULL, .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
-        .callback = buffer_map_callback, .userdata1 = &result, .userdata2 = NULL,
-    };
-    if (pfn_doeNativeBufferMapAsync) {
-        WGPUFuture future = pfn_doeNativeBufferMapAsync(buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i, cb_info);
-        if (future.id == 0 || !result.done) NAPI_THROW(env, "flushAndMapSync: doeNativeBufferMapAsync unavailable");
-        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
-            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "flushAndMapSync: doeNativeBufferMapAsync failed", result.status, result.message);
-    } else if (pfn_wgpuBufferMapAsync2) {
-        WGPUFuture future = pfn_wgpuBufferMapAsync2(buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i, cb_info);
-        if (future.id == 0) NAPI_THROW(env, "flushAndMapSync: bufferMapAsync future unavailable");
-        if (!process_events_until(inst, &result.done, current_timeout_ns(env)))
-            return throw_status_error(env, "DOE_BUFFER_MAP_TIMEOUT", "flushAndMapSync: bufferMapAsync timed out", result.status, result.message);
-        if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS)
-            return throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "flushAndMapSync: bufferMapAsync failed", result.status, result.message);
-    } else {
-        NAPI_THROW(env, "flushAndMapSync: bufferMapAsync unavailable");
-    }
+    if (!map_buffer_sync(env, inst, buf, (uint64_t)mode, (size_t)offset_i, (size_t)size_i)) return NULL;
+
     napi_value ok; napi_get_boolean(env, true, &ok);
     return ok;
 }

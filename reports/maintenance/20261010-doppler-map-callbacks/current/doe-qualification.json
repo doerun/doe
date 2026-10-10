@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "classification": "qualification",
+  "lane": "doe",
+  "mode": "qualification",
+  "processIndex": 0,
+  "loadMs": 1098.449951,
+  "phaseEvents": [],
+  "runnerSha256": "0d3e05e8f5c2d23e9cbab9ffe00f8eb206173b2ddc556ccd752fb1370ce25e7b",
+  "completeProcessWorkMs": 1314.2297749999998,
+  "peakProcessRssBytes": 475447296,
+  "contractSha256": "e77adf8a73e872efda6b3fb13ac1810477b1f7d6adc7a73cea1b2ba9a87c8936",
+  "providerManifestSha256": "63fb182414d00f265a8366531d09e8e012488dfe789aca1d574856f5e4df85b8",
+  "referenceSha256": "c71da2db7a01a87f714446b68eb5eb1550b478f97784e9cba580f05b287dc546",
+  "providerInfo": {
+    "module": "doe-gpu",
+    "loaded": true,
+    "loadError": "",
+    "defaultCreateArgs": [],
+    "doeNative": true,
+    "libraryFlavor": "doe-dropin",
+    "doeLibraryPath": "/home/x/deco/doe/bench/out/doppler-generation/20261010-diagnosis/current-build/lib/libwebgpu_doe.so",
+    "buildMetadataSource": "workspace",
+    "buildMetadataPath": "/home/x/deco/doe/bench/out/doppler-generation/20261010-diagnosis/current-build/share/doe-build-metadata.json",
+    "leanVerifiedBuild": false,
+    "proofArtifactSha256": null,
+    "nativeFastPaths": {
+      "appleFastPathCompiled": false,
+      "queueFlush": true,
+      "queueFlushBreakdown": true,
+      "queueWriteBufferBatch": true,
+      "queueWriteBufferBatchDataPtrs": true,
+      "computeDispatchFlush": true,
+      "computeDispatchFlushBreakdown": true,
+      "computeDispatchBatchFlush": true,
+      "computeDispatchBatchCopyFlush": true,
+      "computeDispatchBatchCopyFlushBreakdown": true,
+      "computePrewarmDispatchBindings": true,
+      "bufferMapReadCopyUnmap": true
+    }
+  },
+  "rows": [],
+  "cleanup": {
+    "unloaded": true,
+    "devicesDestroyed": 4,
+    "elapsedMs": 8.748953000000029
+  },
+  "passed": false,
+  "failure": {
+    "name": "Error",
+    "message": "flushAndMapSync: doeNativeBufferMapAsync unavailable",
+    "stack": "Error: flushAndMapSync: doeNativeBufferMapAsync unavailable\n    at Object.bufferMapAsync (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doe/src/vendor/webgpu/index.js:1926:15)\n    at DoeGPUBuffer.mapAsync (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doe/src/vendor/webgpu/shared/full-surface.js:748:23)\n    at DoeComputeGPUBuffer.mapAsync (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doe/src/vendor/webgpu/compute.js:51:22)\n    at BufferPool.readBufferSlice (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/memory/buffer-pool.js:635:21)\n    at BufferPool.readBuffer (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/memory/buffer-pool.js:591:17)\n    at readBuffer (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/memory/buffer-pool.js:840:25)\n    at PipelineGenerator._prefill (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/inference/pipelines/text/generator/prefill-runtime.js:643:38)\n    at async PipelineGenerator._prefillPromptToLogits (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/inference/pipelines/text/generator/prefill-runtime.js:98:16)\n    at async PipelineGenerator._generateTokensInternal (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/inference/pipelines/text/generator/decode-runtime.js:188:58)\n    at async PipelineGenerator._generateTokensInternal (file:///home/x/deco/doe/bench/out/doppler-generation/20261004/installed/doppler/src/inference/pipelines/text/generator.js:467:12)"
+  }
+}

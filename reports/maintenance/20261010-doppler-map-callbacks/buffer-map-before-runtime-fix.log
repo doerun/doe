@@ -1,0 +1,10 @@
+file:///home/x/deco/doe/packages/doe-gpu/test/integration/test-integration-native-buffer-map.js:41
+  const result = addon.bufferMapReadCopyUnmap(device._instance, device.queue._native,
+                       ^
+
+Error: bufferMapReadCopyUnmapFlat failed
+    at file:///home/x/deco/doe/packages/doe-gpu/test/integration/test-integration-native-buffer-map.js:41:24 {
+  code: 'DOE_ERROR'
+}
+
+Node.js v22.22.1

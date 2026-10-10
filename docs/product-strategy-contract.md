@@ -110,3 +110,9 @@ The policy tests reject loss of the independent compiler role, implicit backend
 expansion, missing comparison classes, and reordered acceptance milestones.
 Historical evidence and numerical thresholds remain untouched. Schema and
 component checks validate this strategy migration; GPU qualification is separate.
+
+The operating objective now selects Doppler-driven Vulkan engineering. Existing
+fields and ordered adoption milestones are unchanged: independent correctness
+evidence does not require an external customer. The published ONNX evaluation
+remains available while current-source generation correctness and dominant costs
+guide the next implementation. This changes work selection, not historical verdicts.

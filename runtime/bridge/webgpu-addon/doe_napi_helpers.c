@@ -488,6 +488,60 @@ void buffer_map_callback(uint32_t status, WGPUStringView message,
     r->done = 1;
 }
 
+/* AllowProcessEvents keeps delivery on the instance's event-processing thread.
+ * After a timeout, the callback owns its state until delivery or cancellation. */
+typedef struct {
+    BufferMapResult result;
+    bool abandoned;
+} PendingBufferMap;
+
+static void pending_buffer_map_callback(uint32_t status, WGPUStringView message,
+    void* userdata1, void* userdata2) {
+    PendingBufferMap* pending = userdata1;
+    buffer_map_callback(status, message, &pending->result, userdata2);
+    if (pending->abandoned) free(pending);
+}
+
+int map_buffer_sync(napi_env env, WGPUInstance inst, WGPUBuffer buffer,
+    uint64_t mode, size_t offset, size_t size) {
+    if (!inst || !buffer || !pfn_wgpuInstanceProcessEvents ||
+        (!pfn_doeNativeBufferMapAsync && !pfn_wgpuBufferMapAsync2)) {
+        napi_throw_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync unavailable");
+        return 0;
+    }
+    PendingBufferMap* pending = calloc(1, sizeof(*pending));
+    if (!pending) {
+        napi_throw_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync allocation failed");
+        return 0;
+    }
+    WGPUBufferMapCallbackInfo callback = {
+        .mode = WGPU_CALLBACK_MODE_ALLOW_PROCESS_EVENTS,
+        .callback = pending_buffer_map_callback,
+        .userdata1 = pending,
+    };
+    WGPUFuture future = pfn_doeNativeBufferMapAsync
+        ? pfn_doeNativeBufferMapAsync(buffer, mode, offset, size, callback)
+        : pfn_wgpuBufferMapAsync2(buffer, mode, offset, size, callback);
+    if (future.id == 0) {
+        free(pending);
+        napi_throw_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync future unavailable");
+        return 0;
+    }
+    process_events_until(inst, &pending->result.done, current_timeout_ns(env));
+    if (!pending->result.done) {
+        pending->abandoned = true;
+        napi_throw_error(env, "DOE_BUFFER_MAP_TIMEOUT", "bufferMapAsync timed out");
+        return 0;
+    }
+    const BufferMapResult result = pending->result;
+    free(pending);
+    if (result.status != WGPU_MAP_ASYNC_STATUS_SUCCESS) {
+        throw_status_error(env, "DOE_BUFFER_MAP_ERROR", "bufferMapAsync failed", result.status, result.message);
+        return 0;
+    }
+    return 1;
+}
+
 void queue_work_done_callback(uint32_t status, WGPUStringView message,
     void* userdata1, void* userdata2) {
     (void)userdata2;

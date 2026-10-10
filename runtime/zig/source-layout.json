@@ -3148,9 +3148,9 @@
       },
       "src/dropin/dropin_abi_procs.zig": {
         "decision": "Keep",
-        "moduleSha256": "6e3abb3492c7f031884b734275095ad529f3a77eeca42c72925e821914231fed",
-        "reason": "Keep: WebGPU ABI proc-table population capsule with 108 declarations; merging would mix ABI table ownership with drop-in object behavior.",
-        "reviewer": "codex-recomposition-review/2026-08-08"
+        "moduleSha256": "747cbe636702a43c3ddbd28645ee66845b4eebd5a724b7570e7559697b2b05ed",
+        "reason": "Keep: ABI wrappers translate host calls to native owners. Synchronous map adapters pump native callback delivery and retain callback storage through settlement, including timeout. No shader or backend policy enters this facade.",
+        "reviewer": "codex-callback-bridge-review/2026-10-10"
       },
       "src/dropin/dropin_behavior_policy.zig": {
         "decision": "Keep",

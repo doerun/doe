@@ -59,8 +59,11 @@ owns the ordered milestone IDs, binding proving set, and development metric.
 
 These are ordered acceptance milestones, not a requirement to delay technical
 release or correctness work until a performance win or customer payment. The
-current emphasis is independent installation, one real consumer requirement, and
-retained use. No successor optimization campaign is selected automatically.
+current engineering customer is Doppler. Qualify unchanged generation on current
+Vulkan, diagnose dominant complete-generation costs, and select one general compiler
+or runtime improvement against frozen acceptance. A competent Dawn control and an
+independent numerical reference provide technical evidence; external recruitment
+is not an engineering gate. Transfer evidence and voluntary adoption remain separate.
 Supported embedding, maintained binaries, and support are commercial hypotheses;
 validate repeated voluntary use before expanding paid offerings.
 
@@ -211,7 +214,8 @@ D3D12 remains deferred. Existing regression checks do not constitute parallel
 optimization campaigns. A consumer requirement informs the next selection; it
 cannot silently override this backend boundary.
 
-The immediate emphasis is independent installation and consumer-led engineering.
+The immediate emphasis is Doppler-driven Vulkan engineering; the existing ONNX
+evaluation distribution is sufficient for adoption work.
 Measure reproduction-to-verified-improvement time from the retained reproducible problem
 to independent confirmation under frozen acceptance. Link timestamps, source,
 and evidence in existing work records; keep rejected and unresolved attempts
