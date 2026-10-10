@@ -273,6 +273,25 @@
       "docs": [
         "docs/internal-tooling.md"
       ]
+    },
+    {
+      "id": "onnx-vulkan-evaluation",
+      "audience": "public",
+      "kind": "example_corpus",
+      "stability": "experimental",
+      "shipped": true,
+      "summary": "Versioned Linux AMD Vulkan evaluation archive with the pinned existing ONNX WebGPU provider, standalone installer and physical acceptance. No npm, browser, performance or adoption claim. Archive builder remains contributor-only.",
+      "rootPaths": [
+        "bench/external-projects/onnx-vulkan-release"
+      ],
+      "entrypoints": [
+        "bench/external-projects/onnx-vulkan-release/doe_onnx.py",
+        "bench/external-projects/onnx-vulkan-release/verify_evidence.py"
+      ],
+      "docs": [
+        "docs/onnx-vulkan-installation.md",
+        "bench/external-projects/onnx-vulkan-release/README.md"
+      ]
     }
   ]
 }

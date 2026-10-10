@@ -21,6 +21,16 @@ verifier must replay retained raw populations and the stopping decision alongsid
 schema and recovery controls. Diagnostic admission cannot promote a performance
 claim or reopen the completed campaign's decision.
 
+The additive [ONNX Vulkan installation contract](onnx-vulkan-installation.md)
+requires deterministic manifests and archive bytes, verified installation,
+loader-observed native identities, shader/submission journals, independent
+numerical checks, callback/lifecycle fixtures and negative controls against the
+exact delivered library. Input acquisition can use a verified previous package;
+consumer execution never requires producer directories. Schema admission,
+semantic evidence replay and installation integrity regressions are blocking
+for this evaluation distribution. Local qualification does not establish an
+external reproduction, adoption or application advantage.
+
 ## Canonical intent contract
 
 Doe does not add a second free-form run-intent field. Executable intent is the

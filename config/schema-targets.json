@@ -2,6 +2,38 @@
   "schemaVersion": 2,
   "targets": [
     {
+      "schema": "config/onnx-vulkan-release-evidence.schema.json",
+      "data": "reports/releases/20261009-onnx-vulkan-evaluation/installation.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-release-evidence.schema.json",
+      "data": "reports/releases/20261009-onnx-vulkan-evaluation/delivery.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-installation.schema.json",
+      "data": "reports/releases/20261009-onnx-vulkan-evaluation/example.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-installation.schema.json",
+      "data": "reports/releases/20261009-onnx-vulkan-evaluation/qualification.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-installation.schema.json",
+      "data": "reports/releases/20261009-onnx-vulkan-evaluation/package-manifest.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-installation.schema.json",
+      "data": "reports/releases/20261009-onnx-vulkan-evaluation/build-two.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-installation.schema.json",
+      "data": "reports/releases/20261009-onnx-vulkan-evaluation/build-one.json"
+    },
+    {
+      "schema": "config/onnx-vulkan-release.schema.json",
+      "data": "config/onnx-vulkan-release.json"
+    },
+    {
       "schema": "config/native-device-lifecycle-contract.schema.json",
       "data": "config/native-device-lifecycle-contract.json"
     },

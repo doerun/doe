@@ -23,6 +23,7 @@ Inputs:
 
 Outputs:
 - Reproducible harnesses, preparation and reproduction receipts, failure records, and promotion candidates.
+- Versioned evaluation archives and standalone installation/qualification tools; runtime semantics remain runtime-owned.
 
 ## Invariants
 
@@ -34,6 +35,7 @@ Outputs:
 - Diagnostic applications do not silently become release blockers.
 - Isolation evidence distinguishes exact workspace exposure from broader system
   roots and records writable, network, device, and scratch boundaries.
+- Evaluation delivery preserves operators and numerical requirements; explicit public tools and local installation do not establish adoption or advantage.
 
 ## Acceptance
 

@@ -18,6 +18,12 @@ provider-neutral governed process contract and cannot promote benchmark,
 runtime-ownership, or release claims. Other benchmark and release CLIs remain
 repo-only.
 
+The [ONNX Vulkan evaluation archive](onnx-vulkan-installation.md) is an explicit
+experimental public distribution exception. Its standalone installer, example
+runner and qualifier ship in the archive; the source-input builder remains
+contributor tooling. This does not add an npm export or promote general ONNX
+compatibility. The tooling manifest names these entrypoints separately.
+
 ## Repo-only surface
 
 Unless the manifest says otherwise, these are contributor/operator tooling:

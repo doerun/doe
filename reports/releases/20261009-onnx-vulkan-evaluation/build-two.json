@@ -1,0 +1,13 @@
+{
+  "archive": {
+    "path": "doe-onnx-vulkan-0.1.0-eval.1-linux-x64.tar.gz",
+    "sha256": "9e469bbb7bbb02a4fcf40844553e873a05b14af2e1466e480b551724e0aec7d2",
+    "size": 19229485
+  },
+  "builderSha256": "2c6f8a069c8e7e4b3997c22730640470e8b3c835d177b0eafeaf3185b72a043d",
+  "kind": "doe-onnx-vulkan-archive",
+  "manifestSha256": "2d2c1e9ff78431c6141fec4dcd0dc157e19c3bb6c87dca9a532ec42d3ec5e3c9",
+  "planSha256": "315d78f42ab7b1b6d1443f142bdffb2c93b29813192ba6accf9e54c4f38bbe3c",
+  "schemaVersion": 1,
+  "version": "0.1.0-eval.1"
+}

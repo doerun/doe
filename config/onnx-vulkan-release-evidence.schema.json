@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ONNX Vulkan evaluation delivery custody",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "version",
+        "sourceBaseCommit",
+        "producerSourceHashes",
+        "archive",
+        "manifestSha256",
+        "reproducible",
+        "qualificationPassed",
+        "externalReproduction",
+        "externalAdoption",
+        "performanceClaim",
+        "files"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "kind": {
+          "const": "doe-onnx-vulkan-delivery"
+        },
+        "version": {
+          "type": "string"
+        },
+        "sourceBaseCommit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "producerSourceHashes": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "archive": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256",
+            "size"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "size": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "manifestSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reproducible": {
+          "const": true
+        },
+        "qualificationPassed": {
+          "const": true
+        },
+        "externalReproduction": {
+          "const": false
+        },
+        "externalAdoption": {
+          "const": false
+        },
+        "performanceClaim": {
+          "const": false
+        },
+        "files": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "kind",
+        "command",
+        "exitCode",
+        "archiveSha256",
+        "logSha256",
+        "checkoutExposure",
+        "network"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "kind": {
+          "const": "isolated-evaluation-installation"
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exitCode": {
+          "const": 0
+        },
+        "archiveSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "logSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "checkoutExposure": {
+          "const": "none"
+        },
+        "network": {
+          "const": "unshared"
+        }
+      }
+    }
+  ]
+}

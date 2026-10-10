@@ -1,5 +1,19 @@
 # Doe status: runtime backends and benchmarks
 
+## ONNX Vulkan evaluation delivery
+
+The [evaluation release](../../reports/releases/20261009-onnx-vulkan-evaluation/README.md)
+packages the qualified native library and existing ONNX provider integration.
+Deterministic archive reconstruction and an isolated fresh installation pass
+initialization, callbacks, lifecycle, unchanged application output and negative
+controls. Loaded native libraries and shader/submission journals bind actual Doe
+execution. The [installation contract](../onnx-vulkan-installation.md) owns the
+public evaluation boundary; npm and browser surfaces are separate.
+
+External operator reproduction, additional hosts, registry publication and
+voluntary retention remain open. No new performance campaign or application
+advantage is promoted; prior campaign decisions remain preserved.
+
 ## Bounded ONNX Vulkan device lifecycle qualification
 
 The [device lifecycle campaign](../../reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-device-lifecycle/README.md)
