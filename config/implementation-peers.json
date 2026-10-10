@@ -17,7 +17,7 @@
       "repositoryUrl": "https://github.com/google/dawn",
       "trackingNote": "Upstream research, native and package comparisons are tracked. Exact source and library identities belong to each retained run, not this inventory.",
       "trackingPaths": [
-        "dawn-research/README.md",
+        "pipeline/dawn-research/README.md",
         "bench/tools/bootstrap_dawn.py",
         "config/compare-taxonomy.json"
       ],

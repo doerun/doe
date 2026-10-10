@@ -58,7 +58,7 @@ IMMUTABLE_RAW_EVIDENCE_FILES = frozenset(
         ),
     }
 )
-PUBLIC_CORPUS_PREFIXES = ("dawn-research/data/",)
+PUBLIC_CORPUS_PREFIXES = ("pipeline/dawn-research/data/",)
 
 
 @dataclass(frozen=True)

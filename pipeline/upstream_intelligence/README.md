@@ -2,7 +2,7 @@
 
 This package is Doe's active, update-aware intake and review pipeline for Dawn
 Gerrit changes and the Chromium issues they reference. It replaces the
-`dawn-research/` regex experiment as the operational history surface. The
+`pipeline/dawn-research/` regex experiment as the operational history surface. The
 source miner in `pipeline/agent/` remains the independent source-code
 corroboration lane.
 
@@ -90,7 +90,7 @@ Replay the checked-in legacy Gerrit archive without network access:
 
 ```bash
 python3 -m pipeline.upstream_intelligence replay \
-  dawn-research/data/raw_changes/changes-*.jsonl
+  pipeline/dawn-research/data/raw_changes/changes-*.jsonl
 ```
 
 Malformed archive rows are hash-recorded in `inputRejections`, excluded from

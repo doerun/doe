@@ -264,11 +264,11 @@
       "shipped": false,
       "summary": "Research and incubation areas that are not product or package contracts.",
       "rootPaths": [
-        "dawn-research",
-        "nursery"
+        "pipeline/dawn-research",
+        "docs/archive/nursery"
       ],
       "entrypoints": [
-        "dawn-research/scripts/analyze_dawn_hotspots.py"
+        "pipeline/dawn-research/scripts/analyze_dawn_hotspots.py"
       ],
       "docs": [
         "docs/internal-tooling.md"

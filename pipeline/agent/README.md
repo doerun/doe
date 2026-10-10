@@ -105,5 +105,5 @@ receipts.
 
 This module (`pipeline/agent/`) is the independent source corroboration lane:
 it reads checked-out Dawn source files and emits machine-consumable quirk
-records that feed the Zig runtime via `--quirks`. `dawn-research/` is retained
+records that feed the Zig runtime via `--quirks`. `pipeline/dawn-research/` is retained
 only as a deprecated archive and replay corpus.

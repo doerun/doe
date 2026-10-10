@@ -1,6 +1,6 @@
 # CATSCAN: Dawn research
 
-Parent: [Doe](../CATSCAN.md)
+Parent: [Pipeline](../CATSCAN.md)
 
 ## Target
 

@@ -69,10 +69,10 @@ Default assumptions:
   manifest marks them `audience=public`
 - legacy npm names `@simulatte/webgpu` and `@simulatte/webgpu-doe` redirect to
   `doe-gpu`
-- `dawn-research/` is a Gerrit CL analysis pipeline (research surface; see
+- `pipeline/dawn-research/` is a Gerrit CL analysis pipeline (research surface; see
   `pipeline/agent/README.md`) referenced by `config/tool-surfaces.json`
-- `nursery/` retains archive navigation; current CI does not consume executable
-  surfaces there. Chromium integration lives in `browser/chromium/`, and CTS
+- `docs/archive/nursery/` retains archive navigation; current CI does not consume
+  executable surfaces there. Chromium integration lives in `browser/chromium/`, and CTS
   provider tooling lives in `bench/cts/`. Use `config/tool-surfaces.json` and
   current workflow paths when classifying a surface.
 

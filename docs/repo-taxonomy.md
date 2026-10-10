@@ -13,6 +13,10 @@ Doe is organized by product boundary first:
 This avoids treating package subpaths or benchmark entrypoints as standalone
 products.
 
+For a shared project link, use the [Doe overview](https://github.com/doerun/doe#readme).
+The root keeps product entry points, licensing, configuration, and automatically
+discovered agent instructions. Supporting archives live with their owning families.
+
 ## Top-level families
 
 ### Runtime
@@ -38,7 +42,7 @@ products.
 
 ### Conformance and examples
 
-- `cts`
+- `bench/cts`
   - repo-only CTS provider shims and related execution glue
 - `examples`
   - command examples, sample receipts, and checked sample artifacts
@@ -66,12 +70,21 @@ products.
 - `config`
 - `pipeline/lean`
 - `pipeline/trace`
+- `pipeline/upstream_intelligence`
+- `pipeline/dawn-research`
+  - retained Gerrit research scripts and corpus used for offline replay
 
 `config/` remains top-level for path stability, but it is conceptually owned by
 the pipeline family.
 
+### Documentation archives
+
+- `docs/archive/nursery`
+  - navigation from former nursery surfaces to their current owners
+
 ## Legacy path note
 
-Historical `nursery/*`, `zig/`, `agent/`, `lean/`, `trace/`, and `config/`
+Historical `dawn-research/`, `nursery/*`, `zig/`, `agent/`, `lean/`, `trace/`, and `config/`
 references may still appear in older artifacts or compatibility paths. Use the
-families above as the canonical structure.
+families above as the canonical structure. Retained evidence keeps its original
+paths and bytes; current commands and navigation use the relocated paths.

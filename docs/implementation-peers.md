@@ -32,7 +32,7 @@ Upstream research, native and package comparisons are tracked. Exact source and 
 
 Tracking:
 
-- [dawn-research/README.md](../dawn-research/README.md)
+- [pipeline/dawn-research/README.md](../pipeline/dawn-research/README.md)
 - [bench/tools/bootstrap_dawn.py](../bench/tools/bootstrap_dawn.py)
 - [config/compare-taxonomy.json](../config/compare-taxonomy.json)
 

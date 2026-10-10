@@ -32,7 +32,8 @@ Unless the manifest says otherwise, these are contributor/operator tooling:
 - `runtime/zig/` build and compiler tools;
 - `browser/chromium/` browser contracts, scripts, and diagnostics;
 - `pipeline/` trace, proof, and upstream-intelligence tooling;
-- top-level `scripts/`, `examples/`, `demos/`, and `nursery/`.
+- top-level `scripts/`, `examples/`, and `demos/`;
+- archive navigation under `docs/archive/nursery/`.
 
 `bench/gates/catscan_gate.py` is the internal component-charter validator and
 generated-index owner. It is a contributor gate, not a public package API.

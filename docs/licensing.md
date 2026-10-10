@@ -14,7 +14,7 @@ The BSD 3-Clause license (`bench/vendor/dawn/LICENSE`) governs all Dawn source i
 
 1. **Mining Gerrit and public issue metadata**
    (`pipeline/upstream_intelligence/`; archived predecessor
-   `dawn-research/`): Public commit and issue metadata are used as factual
+   `pipeline/dawn-research/`): Public commit and issue metadata are used as factual
    evidence. Review packets retain source URLs and do not copy upstream code
    into Doe runtime paths.
 
