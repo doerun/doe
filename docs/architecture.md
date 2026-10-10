@@ -5,8 +5,8 @@
 These views trace source at `49f6e0af0`: compiler ownership, native execution,
 and optional prepared-program lifetimes. They explain implementation boundaries;
 they do not extend the [qualified support matrix](doe-support-matrix.md).
-The README contains the diagrams; this guide explains their source boundaries
-and execution contracts.
+The README contains component and lifetime diagrams. This guide includes the
+submission sequence, source boundaries and execution contracts.
 
 ### Compiler and runtime ownership
 
@@ -37,7 +37,33 @@ This follows ordinary native WebGPU compute through the Vulkan submission
 adapter. Host bindings translate the API calls; they do not interpret WGSL or
 implement the kernel's arithmetic.
 
-[View this diagram in the README.](../README.md#native-compute-submission-and-completion)
+```mermaid
+sequenceDiagram
+    participant A as Application / binding
+    participant N as Native object layer
+    participant C as WGSL compiler
+    participant V as Vulkan backend
+    participant G as Driver / GPU
+    A->>N: Create shader, layout, pipeline, buffers, bind group
+    N->>C: Analyze source and compile declared entry point / overrides
+    C-->>N: Target code and reflection, or diagnostic failure
+    N->>V: Prepare compatible pipeline and native resources
+    V->>G: Create device-specific pipeline and allocations
+    N-->>A: WebGPU handles, or reported creation failure
+    A->>N: Encode bindings, dispatch, and requested copies
+    N->>N: Validate and retain command resource references
+    A->>N: finish(), then queue.submit(commandBuffers)
+    N->>V: Replay recorded commands with validated bindings
+    V->>G: Submit GPU work and track completion
+    N-->>A: Submission returns before completion is guaranteed
+    A->>N: onSubmittedWorkDone() / mapAsync() as required
+    N->>V: Observe queue completion and mapping readiness
+    G-->>V: Completion or native failure
+    V-->>N: Settled status and requested output visibility
+    N-->>A: Deliver callback / mapping result or error
+    A->>N: Release handles when no longer needed
+    N->>V: Release owned resources under lifetime rules
+```
 
 Recording, submission, completion, and readable output are distinct boundaries.
 Command references retain their dependencies. A caller's timeout does not prove

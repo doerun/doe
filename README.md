@@ -18,7 +18,7 @@ prerequisites, package acquisition, initialization, cleanup, and exclusions.
 ![Doe prepares a shader program and binds its data on the selected device, then executes GPU work.](assets/readme/execution.svg)
 
 Backend support and native/browser releases are qualified separately. See the
-[technical diagrams: compiler, execution, resource lifetime](#technical-architecture)
+[technical diagrams: compiler and resource lifetime](#technical-architecture)
 and [support matrix](docs/doe-support-matrix.md).
 
 **[Evaluate ONNX on Vulkan](docs/onnx-vulkan-installation.md)** · [Run your first Doe kernel](#how-to-use-doe)
@@ -137,39 +137,6 @@ flowchart TB
     class FRONT,IR,EMIT compiler
     class API,BACK runtime
     class DRIVER hardware
-```
-
-### Native compute submission and completion
-
-Recording, submission, completion and readable output are distinct. A timeout
-does not prove GPU completion or authorize resource reuse.
-
-```mermaid
-sequenceDiagram
-    participant A as Application / binding
-    participant N as Native object layer
-    participant C as WGSL compiler
-    participant V as Vulkan backend
-    participant G as Driver / GPU
-    A->>N: Create shader, layout, pipeline, buffers, bind group
-    N->>C: Analyze source and compile declared entry point / overrides
-    C-->>N: Target code and reflection, or diagnostic failure
-    N->>V: Prepare compatible pipeline and native resources
-    V->>G: Create device-specific pipeline and allocations
-    N-->>A: WebGPU handles, or reported creation failure
-    A->>N: Encode bindings, dispatch, and requested copies
-    N->>N: Validate and retain command resource references
-    A->>N: finish(), then queue.submit(commandBuffers)
-    N->>V: Replay recorded commands with validated bindings
-    V->>G: Submit GPU work and track completion
-    N-->>A: Submission returns before completion is guaranteed
-    A->>N: onSubmittedWorkDone() / mapAsync() as required
-    N->>V: Observe queue completion and mapping readiness
-    G-->>V: Completion or native failure
-    V-->>N: Settled status and requested output visibility
-    N-->>A: Deliver callback / mapping result or error
-    A->>N: Release handles when no longer needed
-    N->>V: Release owned resources under lifetime rules
 ```
 
 ### Optional prepared-program resource lifetime
