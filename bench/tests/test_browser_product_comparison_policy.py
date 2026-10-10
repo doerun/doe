@@ -3,12 +3,12 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import unittest
 from pathlib import Path
 from typing import Any
 from jsonschema import Draft202012Validator
-
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 POLICY_PATH = REPO_ROOT / "config" / "browser-product-comparison-policy.json"
@@ -37,25 +37,104 @@ class BrowserProductComparisonPolicyTests(unittest.TestCase):
         )
         validator.validate(strategy)
         surfaces = {row["id"]: row for row in strategy["surfaces"]}
-        self.assertEqual(surfaces["doeruntime"]["portfolioRole"], "primary-product")
-        self.assertEqual(surfaces["doeproof"]["portfolioRole"], "product-feature")
-        self.assertEqual(surfaces["fawn"]["portfolioRole"], "experimental-distribution")
+        self.assertEqual(
+            surfaces["doecompiler"]["portfolioRole"], "primary-product"
+        )
+        self.assertEqual(
+            surfaces["doecompiler"]["marketRole"], "compiler-adoption"
+        )
+        self.assertEqual(
+            surfaces["doeruntime"]["portfolioRole"], "primary-product"
+        )
+        self.assertEqual(
+            surfaces["doeproof"]["portfolioRole"], "product-feature"
+        )
+        self.assertEqual(
+            surfaces["fawn"]["portfolioRole"], "experimental-distribution"
+        )
         surfaces["fawn"]["portfolioRole"] = "secondary-product"
         self.assertFalse(validator.is_valid(strategy))
         surfaces["fawn"]["portfolioRole"] = "experimental-distribution"
         surfaces["doeproof"]["portfolioRole"] = "primary-product"
         self.assertFalse(validator.is_valid(strategy))
 
-    def test_qualification_cannot_replace_adoption_and_repeat_retention(self) -> None:
+    def test_strategy_rejects_implicit_expansion_and_coupled_adoption(
+        self,
+    ) -> None:
+        strategy = json.loads(STRATEGY_PATH.read_text(encoding="utf-8"))
+        validator = Draft202012Validator(
+            json.loads(
+                STRATEGY_PATH.with_suffix(".schema.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+        )
+        validator.validate(strategy)
+        cases = []
+        missing_compiler = copy.deepcopy(strategy)
+        missing_compiler["surfaces"] = [
+            row
+            for row in missing_compiler["surfaces"]
+            if row["id"] != "doecompiler"
+        ]
+        cases.append(missing_compiler)
+        coupled = copy.deepcopy(strategy)
+        compiler = next(
+            row for row in coupled["surfaces"] if row["id"] == "doecompiler"
+        )
+        compiler["marketRole"] = "runtime-adoption"
+        cases.append(coupled)
+        for key, value in (
+            ("activeBackend", "apple-metal"),
+            ("metalTransition", "customer-request"),
+            ("d3d12", "active"),
+            ("browser", "required-destination"),
+        ):
+            expanded = copy.deepcopy(strategy)
+            expanded["executionOwnership"]["workSelection"][key] = value
+            cases.append(expanded)
+        for index, candidate in enumerate(cases):
+            with self.subTest(case=index):
+                self.assertFalse(validator.is_valid(candidate))
+
+    def test_strategy_preserves_comparison_classes_and_acceptance_order(
+        self,
+    ) -> None:
+        strategy = json.loads(STRATEGY_PATH.read_text(encoding="utf-8"))
+        validator = Draft202012Validator(
+            json.loads(
+                STRATEGY_PATH.with_suffix(".schema.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+        )
+        classes = strategy["comparisonLaw"]["classes"]
+        for comparison_class in classes:
+            candidate = copy.deepcopy(strategy)
+            candidate["comparisonLaw"]["classes"].remove(comparison_class)
+            self.assertFalse(validator.is_valid(candidate))
+        strategy["milestones"][0], strategy["milestones"][1] = (
+            strategy["milestones"][1],
+            strategy["milestones"][0],
+        )
+        self.assertFalse(validator.is_valid(strategy))
+
+    def test_qualification_cannot_replace_adoption_and_repeat_retention(
+        self,
+    ) -> None:
         strategy = json.loads(STRATEGY_PATH.read_text(encoding="utf-8"))
         schema = json.loads(
-            STRATEGY_PATH.with_suffix(".schema.json").read_text(encoding="utf-8")
+            STRATEGY_PATH.with_suffix(".schema.json").read_text(
+                encoding="utf-8"
+            )
         )
         validator = Draft202012Validator(schema)
         gate = strategy["commercialOffer"]["commercialPromotionGate"]
         original = gate["requiredEvidence"]
         for field in original:
-            gate["requiredEvidence"] = [item for item in original if item != field]
+            gate["requiredEvidence"] = [
+                item for item in original if item != field
+            ]
             self.assertFalse(validator.is_valid(strategy), field)
         gate["requiredEvidence"] = ["paid-qualification"]
         self.assertFalse(validator.is_valid(strategy))
@@ -72,7 +151,9 @@ class BrowserProductComparisonPolicyTests(unittest.TestCase):
         policy = _load_policy()
         lanes = policy["internalCausalLanes"]
 
-        self.assertEqual([lane["laneId"] for lane in lanes], ["A", "B", "C", "D"])
+        self.assertEqual(
+            [lane["laneId"] for lane in lanes], ["A", "B", "C", "D"]
+        )
         self.assertEqual(
             [(lane["browser"], lane["runtime"]) for lane in lanes],
             [
@@ -86,7 +167,9 @@ class BrowserProductComparisonPolicyTests(unittest.TestCase):
     def test_k0_is_external_and_not_a_component_substitution(self) -> None:
         policy = _load_policy()
         comparators = policy["externalComparators"]
-        internal_ids = {lane["laneId"] for lane in policy["internalCausalLanes"]}
+        internal_ids = {
+            lane["laneId"] for lane in policy["internalCausalLanes"]
+        }
 
         self.assertEqual([item["comparatorId"] for item in comparators], ["K0"])
         self.assertNotIn("K0", internal_ids)
@@ -114,7 +197,12 @@ class BrowserProductComparisonPolicyTests(unittest.TestCase):
         )
         self.assertEqual(
             suites["shared-agent-browser-tasks"]["tasks"],
-            ["HTML extraction", "screenshots", "navigation", "automation success"],
+            [
+                "HTML extraction",
+                "screenshots",
+                "navigation",
+                "automation success",
+            ],
         )
         self.assertEqual(
             suites["fawn-differentiation-tasks"]["tasks"],
@@ -130,7 +218,9 @@ class BrowserProductComparisonPolicyTests(unittest.TestCase):
         )
         for suite in suites.values():
             self.assertIn("total task outcome", suite["requiredObservations"])
-            self.assertIn("compatibility failures", suite["requiredObservations"])
+            self.assertIn(
+                "compatibility failures", suite["requiredObservations"]
+            )
 
     def test_independence_tests_preserve_required_comparisons(self) -> None:
         policy = _load_policy()
@@ -140,7 +230,9 @@ class BrowserProductComparisonPolicyTests(unittest.TestCase):
             ["I1 to W0", "B to A", "C to B", "D to C", "K0 beside A/B/C/D"],
         )
 
-    def test_fork_authorities_are_explicit_and_evidence_references_exist(self) -> None:
+    def test_fork_authorities_are_explicit_and_evidence_references_exist(
+        self,
+    ) -> None:
         policy = _load_policy()
 
         self.assertEqual(

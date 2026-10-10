@@ -4,10 +4,10 @@ Parent: none
 
 ## Target
 
-Earn adoption through ordinary WebGPU execution, independent framework
-integration, and demonstrated application transfer. Browser replacement is the
-destination, separately qualified through bounded Chromium integration. One
-portable compiler/runtime owns execution; DoeProof evaluates impartially.
+Earn independent WGSL compiler and native WebGPU runtime adoption with separate
+evidence. Ordinary execution, framework integration, and application transfer
+establish runtime value. Browser replacement is optional and separately selected.
+DoeProof evaluates impartially.
 
 ## Authority
 

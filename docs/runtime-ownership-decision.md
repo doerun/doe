@@ -9,8 +9,11 @@ Doe runtime. It is an implementation and promotion contract for the strategy in
 Runtime ownership is a hypothesis to prove, not a default source of product
 credit.
 
-DoeRuntime is primary and DoeProof is a supporting feature. Their contributions
-remain experimentally separable:
+DoeRuntime is an independently adoptable primary surface and DoeProof is a
+supporting feature. Independent compiler adoption has separate acceptance under
+the [strategy contract](product-strategy-contract.md); it does not require or
+establish the runtime ownership decision here. Their contributions remain
+experimentally separable:
 
 - **DoeProof**: workload identity, execution policy, independent oracles,
   receipts, replay, comparison, and release admission;
@@ -69,8 +72,12 @@ an internal mechanism demonstration does not establish voluntary adoption.
 The same ownership lanes below apply to the frozen treatment.
 
 Every ownership candidate uses the same versioned workload, inputs, semantic
-oracle, hardware tuple, process policy, synchronization, readback, cache state,
-sample policy, and user-visible timing scope across four required lanes:
+oracle, hardware tuple, process policy, synchronization/readback semantics,
+application-level cache/preparation conditions, sample policy, and user-visible
+timing scope across four required lanes. The prospective
+[comparison classes](performance-strategy.md#comparison-classes) permit verified
+elimination of internal work under an unchanged-application contract; fixed-operation
+experiments retain the declared controls. Existing frozen decisions stay unchanged:
 
 | Lane | Construction | Question |
 | --- | --- | --- |
@@ -334,7 +341,10 @@ correctness-localization task and cannot reopen Doppler runtime ownership.
 
 ### Fawn and Chromium
 
-Fawn proceeds from diagnostic integration to product promotion only when:
+Fawn is an optional, deferred route. It proceeds from diagnostic integration to
+product promotion only when:
+
+- an explicit prioritization decision selects browser integration;
 
 - a named application or adopter requires a browser provider rather than the
   package surface;
@@ -367,9 +377,11 @@ consumer and next admission gate remains quarantined research.
 
 ## Product validation boundary
 
-The first portfolio objective is one unchanged external non-Doppler application,
-beginning with AMD/Vulkan unless a real customer supplies a stronger tuple.
-Apple Metal and Windows D3D12 earn support separately. Each lane needs clean installation,
+The first runtime adoption objective is one unchanged external non-Doppler
+application on the current AMD/Vulkan focus. Work proceeds in bounded batches.
+Metal requires explicit prioritization and a handoff; D3D12 remains deferred.
+Existing regression checks do not open parallel optimization campaigns, and a
+consumer request cannot silently change this boundary. Each lane needs clean installation,
 effective provider identity, independent output validation, lifecycle coverage,
 the required comparison lanes, and a material DoeRuntime advantage over W0
 and credible eligible P0, followed by voluntary adoption and repeat retention.

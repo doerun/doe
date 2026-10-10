@@ -112,6 +112,18 @@ pointer, and rationale all in one page. The bundle packer and
 claim-discipline gate depend on `docs/cerebras-evidence-bundle.md` and
 `docs/hardware-validation-appendix.md`; do not delete or rename those.
 
+## Current work selection
+
+Vulkan is the current engineering focus. Work proceeds in bounded batches.
+Switching to Metal requires an explicit prioritization decision and handoff;
+D3D12 remains deferred. Existing regression checks do not constitute parallel
+optimization campaigns. The pinned ONNX Vulkan integration and local isolated
+installation already have evidence; start at `docs/onnx-vulkan-installation.md`.
+Prioritize independent installation, one real consumer requirement, and retained
+use. Correctness, packaging, and independently useful engineering do not require
+customer payment. Compiler adoption is independent of runtime adoption; select
+new compiler opportunities explicitly and keep closed browser experiments closed.
+
 ## Core principles (adopted)
 
 1. Config as code
@@ -175,41 +187,42 @@ claim-discipline gate depend on `docs/cerebras-evidence-bundle.md` and
 - release only when blocking gates are green.
 
 7. Dawn apples-to-apples discipline
-- all Dawn-vs-Doe performance claims must be apples-to-apples by default.
-- strict comparability is required for claimable results; directional runs must be explicitly labeled non-comparable.
-- benchmark methodology knobs that affect comparability must be explicit in config/workload contracts, never hidden in code.
-- fail fast on comparability mismatch instead of reporting timings.
-- structural work equivalence is required: both sides must execute the same operations with equivalent GPU work. A comparison where one side skips commands, reports zero dispatches while the other dispatches, or takes a hardware-specific shortcut that bypasses operations the other side performs is not apples-to-apples regardless of methodology metadata.
-- timing-phase symmetry is required: if one side reports zero in a timing phase (setup, encode, or submit_wait) while the other side reports material cost in that phase, the timing scopes are measuring different things. This is a comparability failure, not a speed win.
-- compute/pipeline operation-speed claims stay on selected operation timing. Do not promote a row to claimable by falling back to workload-unit wall when selected operation timing loses.
-- host kernel/pipeline prewarm is diagnostic host overhead outside selected execution timing unless the workload contract declares a separate timing class for it. Record the provenance, but do not fold it into `doe-execution-total-ns` for a selected operation-timing claim.
-- if selected operation timing and workload-unit wall disagree on claim sign, classify the row as diagnostic and audit timing scope before accepting any speed claim.
-- hardware-path asymmetry (e.g. UMA shared-memory memset vs staging-buffer GPU copy) must carry explicit transferability caveats and cannot be presented as a general speed claim. Mark such workloads with `"pathAsymmetry": true` and document the non-transferable condition.
-- package/runtime readback claims require matching effective readback paths, not just matching requested mode. If one side uses native map-read-copy-unmap and the other uses `mapAsync`, classify the result as diagnostic until both sides perform the same readback path or the workload explicitly declares a non-claimable path asymmetry.
-- benchmark fairness is the first concern. Do not answer that Doe beats Dawn from `claimStatus=claimable` alone; inspect the raw `baselineStatsMs` and `comparisonStatsMs`, convert the result to a speed ratio, and confirm the compared work and timing scope are actually the same.
-- very large wins are fairness-audit triggers, not automatic product claims. A speedup at or above `reliability.suspiciousSpeedupRatio` in `config/benchmark-methodology-thresholds.json`, or a delta near `+90%` or higher under the percent-of-comparison convention, must be called out as suspicious until the artifact proves same work, same timing scope, no one-sided cache/preparation shortcut, no hidden fallback, and no missing dispatch/readback work.
-- if a result looks suspicious, say so immediately in status or chat, even when existing gates currently label it comparable or claimable.
+- declare either unchanged-application replacement or fixed-operation/shader experiment before freezing the workload; follow `docs/performance-strategy.md#comparison-classes`.
+- equivalent application work does not require identical internal implementation work. Missing required execution invalidates a comparison; verified elimination of unnecessary work may constitute the advantage.
+- unchanged-application replacement preserves application inputs, requested work, output/numerical requirements, validation obligations, and complete timing boundaries. Internal allocations, copies, submissions, caches, and generated programs may differ when those obligations remain equivalent.
+- fixed-operation/shader experiments preserve the declared execution shape, effective paths, and cache/preparation controls needed to isolate the named transformation. Differences outside that treatment make the result diagnostic.
+- strict comparability is required for claimable results; methodology and treatment must be explicit in versioned workload contracts and checked by fail-fast gates. Directional runs remain non-comparable.
+- do not bypass existing gates using this prospective clarification. Existing frozen contracts, thresholds, and historical verdicts retain their meaning; a new comparison class needs matching executable checks before promotion.
+- compute/pipeline operation-speed claims stay on selected operation timing. Workload-unit wall cannot rescue a failed selected-operation claim.
+- host kernel/pipeline prewarm remains diagnostic overhead outside selected execution timing unless the contract declares a separate timing class; retain its cost and provenance. Do not hide preparation outside a complete-application boundary.
+- if selected-operation timing and workload-unit wall disagree on claim sign, audit scope and retain both. Neither result establishes the other claim.
+- observe effective readback paths, completion, and output visibility. Different mechanisms can qualify an application replacement when semantics and complete boundaries match; fixed-path operation experiments require the declared path parity.
+- hardware-specific elimination such as shared-memory access replacing staging requires verified semantics and explicit hardware/transferability caveats. Record `pathAsymmetry` where required by the workload schema; it cannot become a general hardware claim.
+- inspect raw `baselineStatsMs` and `comparisonStatsMs`, compute the speed ratio, and verify work and timing before accepting `claimStatus=claimable`.
+- speedups at or above `reliability.suspiciousSpeedupRatio` in `config/benchmark-methodology-thresholds.json`, or near `+90%` under percent-of-comparison, trigger fairness audits. Check omitted work, hidden fallback, asymmetric warmup/precomputation, cache opportunities, and costs moved outside measurement.
+- flag suspicious results immediately even if existing gates label them comparable.
 
 8. Incumbent development discipline
-- performance development against Dawn must preserve matched workload semantics: backend/adapter constraints, operation shape, repeat accounting, and timing unit normalization.
-- if methodology differs from Dawn, the report and docs must state the deviation explicitly.
+- preserve application-level work, backend/adapter constraints, repeat accounting, and timing normalization. Match internal operation shape where the fixed-operation contract requires it.
+- give controls equivalent application-level reuse opportunities, starting state, input history, and warmup. Disclose internal caching and preparation rather than requiring identical implementation strategies.
+- reports must state every methodology deviation explicitly.
 
 9. Contract update discipline
 - runtime-visible field changes require schema updates and migration notes in the same change.
 - process/gate docs and status tracking must be updated in the same change when behavior or contracts change.
 
 10. Structural work equivalence discipline
-- a comparable benchmark must verify that both sides execute the same commands and perform equivalent GPU work, not just that methodology metadata matches.
-- if one side returns `unsupported`, reports 0 dispatches, or skips execution for commands the other side executes, the comparison is invalid.
-- if one side reports an entire timing phase as identically zero across all workloads (e.g. setup_ns=0 on every row) while the other side reports material values, treat this as a systemic instrumentation gap and audit before claiming.
-- execution-shape parity checks (dispatch count, row count, success count) must apply to ALL domains, not only compute-like workloads.
-- when the agent or harness produces a "claimable" result, it must verify structural equivalence before accepting. A positive delta from mismatched work is not evidence of anything.
+- verify required execution for every domain against the declared comparison class, not just matching methodology metadata.
+- unsupported results, omitted required commands, hidden fallback, or absent required completion/readback invalidate the comparison.
+- fixed-operation experiments check declared dispatch/command counts and success counts. Application replacements may eliminate or combine internal work only with independent evidence of equivalent requested computation and lifecycle semantics.
+- unexplained zero dispatches or an identically zero phase trigger an instrumentation/work audit. Keep results diagnostic until evidence distinguishes verified elimination from missing execution or observation.
+- positive deltas from mismatched application requirements or undeclared experimental treatments are not speed claims.
 
 11. Timing-scope completeness discipline
-- for comparable workloads, both sides must report non-trivial timing in the same phases. If LEFT measures only encode while RIGHT measures setup+encode+submit_wait, the comparison is measuring different scopes.
-- render workloads that never commit/wait on the GPU (submit_wait=0) while the comparison side does a full submit+wait are not comparable.
-- upload workloads where one side uses a hardware-specific path (UMA memset, shared memory) that skips operations the other side performs (staging buffer allocation, blit copy, GPU transfer) are not structurally equivalent. The delta measures architectural path choice, not implementation quality.
-- workload-unit wall can be used to diagnose missing work, prewarm behavior, or process-level overhead. It must not rescue a compute/pipeline operation claim after selected operation timing fails the sign or tail requirements.
+- both sides measure the same declared boundary and required completion. Encode-only cannot compare with setup+encode+submit+wait.
+- corresponding internal phases need not cost equally or all exist; every required cost must be inside its declared boundary. Record and substantiate eliminated work rather than fabricating phase symmetry.
+- render execution without required GPU completion is incomparable. Shared-memory upload replacing staging may qualify only under equivalent application semantics and explicit hardware scope.
+- retain cold initialization, preparation, resident execution, and cleanup as declared. No asymmetric warmup, moved costs, or post-result choice of timing class.
 
 ## Stage discipline (must preserve order)
 
@@ -348,7 +361,7 @@ editing code in that surface:
 - include traceability fields: module, hash chain, timing source, timing class
 - warmup before timed runs; discard warmup from reported metrics
 - use shared stats for percentiles and outlier filtering
-- comparisons require matched workloads: same dispatch geometry, same repeat count, same sampling settings
+- comparisons require equivalent requested work, repeat accounting, and sampling; fixed-operation experiments additionally preserve their declared dispatch geometry
 - report deviations from baseline methodology explicitly in comparison notes
 - regression thresholds belong in config, not hardcoded in harness code
 - Dawn-vs-Doe upload benchmarking must explicitly specify and report: first-op handling, upload buffer usage flags, submit cadence, and per-op normalization divisors.
@@ -357,20 +370,18 @@ editing code in that surface:
   minimum timed-sample floor and positive tails (`p50` + `p95`; include `p99` for release claims).
 - Upload claim runs must use timing-source semantics that stay consistent with the measured operation scope.
   If timing-source and ignore-first adjustments mix scopes, classify the run as diagnostic.
-- Before accepting any claimable result, verify structural work equivalence:
-  both sides must report matching dispatch counts, non-zero execution in the same timing phases,
-  and equivalent GPU operations. A positive delta from mismatched work is not a speed claim.
-- Package/runtime readback comparisons must verify effective readback-path
-  equality from actual trace telemetry. Requested mode alone is not evidence of
-  what ran.
+- Before accepting a claimable result, verify work equivalence against the
+  declared comparison class and observe actual execution, completion, and readback.
+  Fixed-operation controls retain required path/dispatch parity; application
+  replacements may demonstrate verified elimination under complete timing scopes.
 - Treat implausibly large speedups as suspicious until audited. Before citing
   them, check for cache/prepared-session differences, skipped work, one-sided
   setup/upload/submit/readback cost, mismatched runtime paths, hidden fallback,
   stale artifacts, and timing-scope errors. If the cause is not proven fair,
   label the result diagnostic instead of claimable.
-- Zero-phase anomaly: if one side reports zero for an entire timing phase (setup, encode, or submit_wait)
-  across all workloads while the other side reports material values, flag as instrumentation gap
-  and classify all affected workloads as diagnostic until audited.
+- Zero-phase anomaly: unexplained zero setup, encode, or submit_wait triggers an
+  audit. Keep affected results diagnostic until verified elimination or complete
+  instrumentation establishes that the declared obligations were met.
 
 ## Benchmark front doors
 
@@ -402,11 +413,9 @@ For each change set, verify:
 - gate expectations were updated or confirmed in `docs/process.md`
 - pipeline/trace/replay outputs are consistent with the changed behavior
 - if Dawn-vs-Doe benchmarking changed, apples-to-apples methodology is documented and enforced by fail-fast checks
-- if any workload is marked claimable, verify structural work equivalence:
-  both sides executed the same commands, dispatch counts match, timing phases
-  have symmetric non-zero coverage, no hardware-path asymmetry is
-  unannotated, and any unusually large speedup has a fairness audit before it
-  is cited
+- if any workload is marked claimable, verify required work, timing completeness,
+  declared fixed-operation controls or substantiated application-level elimination,
+  hardware scope, and the fairness audit for any unusually large speedup
 - the status log (`docs/status.md` plus the relevant topical shard) records remaining placeholders, temporary methodology choices, and follow-up work
 
 ## Pick the real fix

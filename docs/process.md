@@ -5,6 +5,19 @@ live in `docs/operator-runbook.md`, `bench/README.md`, topical runbooks, and
 executable `--help`. Checked-in schemas and policy assets remain authoritative
 for their fields and values.
 
+## Strategy and comparison clarification
+
+The [strategy migration](product-strategy-contract.md) governs independent compiler
+and runtime adoption, bounded Vulkan work selection, and optional browser expansion.
+[Comparison classes](performance-strategy.md#comparison-classes) distinguish
+unchanged-application replacement from fixed-operation/shader experiments.
+Existing gates and frozen contracts retain their meaning. Any future campaign
+that permits different internal execution paths must encode its obligations and
+validate work elimination before promotion; this clarification cannot override
+failed checks or alter historical verdicts. Schema, component, policy, and
+link checks validate the documentation/configuration migration. It changes no
+runtime ABI, model arithmetic, numerical thresholds, or release evidence.
+
 ## ONNX Vulkan campaign migration
 
 The [campaign contract](onnx-vulkan-campaign-contract.md) governs the additive

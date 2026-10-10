@@ -13,8 +13,10 @@ and Python helper tooling under `runtime/zig/tools/`.
   work before presenting a faster result as evidence.
 - For package/runtime benchmarks, compare the effective readback path from
   trace telemetry. A requested readback mode is not enough; native
-  map-read-copy-unmap versus `mapAsync` is a structural mismatch for speed
-  claims.
+  map-read-copy-unmap versus `mapAsync` requires the declared comparison class.
+  Fixed-path experiments require path parity; application replacement requires
+  equivalent output/completion semantics and complete timing boundaries. Follow
+  `docs/performance-strategy.md`; existing frozen gates retain their meaning.
 - Read raw timing before percent deltas. Use `baselineStatsMs` and
   `comparisonStatsMs` to compute the speed ratio before saying a result is a
   win.

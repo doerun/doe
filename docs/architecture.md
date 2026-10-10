@@ -2,8 +2,13 @@
 
 ## System surfaces
 
-Doe exposes one execution product through packages and native embedding, with
-optional integrations and shared evidence tooling.
+Doe develops an independently usable WGSL compiler and native WebGPU runtime.
+Either can earn adoption without requiring the other; their contributions need
+separate evidence. The current native integration front door is the
+[ONNX Vulkan evaluation package](onnx-vulkan-installation.md), with bounded
+[execution and installation evidence](../reports/releases/20261009-onnx-vulkan-evaluation/README.md).
+Vulkan is the active engineering focus; optional integrations and qualification
+tooling support compilation and execution.
 
 1. `runtime/zig`
    The core Doe runtime: WGSL pipeline, backend execution, runtime artifacts,
@@ -28,8 +33,8 @@ current browser evidence remains diagnostic.
 
 ## Strategic decomposition
 
-Doe owns an independent execution product. Controlled package/native hosts
-provide the compatibility entry; explicitly declared repeated programs expose
+Doe owns independently adoptable compiler and runtime surfaces. Controlled
+package/native hosts provide the compatibility entry; explicitly declared repeated programs expose
 work that can be prepared and retained. The decomposition is:
 
 1. **Program identity preservation**
@@ -63,8 +68,9 @@ and binds specialized evidence through typed extensions; see
    No browser-specific globals, no direct cross-backend imports.
 2. **Outside the Zig Runtime:** Applications select `DoeRuntime` through the
    package or native embedding. `DoeLab` supplies correction workflows and
-   `DoeProof` evaluates execution. Browser replacement is the destination,
-   gated by independent native wins, transfer, and bounded Chromium integration.
+   `DoeProof` evaluates execution. Compiler users may adopt WGSL processing and
+   target lowering independently. Browser replacement is optional and deferred,
+   requiring explicit selection, native wins, transfer, and separate qualification.
 3. **Cross-Layer Optimization:** Governed through explicit contracts
    (`WorkloadProfile`, `SpecializationPolicy`, `PromotionReceipt`), never
    through hidden runtime heuristics or implicit environment checks.
@@ -74,18 +80,19 @@ and binds specialized evidence through typed extensions; see
 The important boundary distinctions are:
 
 - `runtime/zig` is the real runtime implementation
-- `runtime/bridge/onnxruntime-ep` retains a repo-only plugin experiment and documents the priority investigation beneath ONNX Runtime’s existing WebGPU provider
+- `runtime/bridge/onnxruntime-ep` retains a historical repo-only plugin experiment and routes to the qualified existing-provider ONNX Vulkan integration
 - `doe-gpu` is the package surface over that runtime
 - `doe-gpu/browser` is a browser wrapper, not the Doe runtime running inside the browser
 - `browser/chromium` owns the experimental Fawn browser-runtime integration
-- `bench` measures surfaces; it is not itself a product surface
+- `bench` owns evaluation tooling; its explicitly public ONNX evaluation distribution packages the supported integration without transferring runtime ownership
 
 Current scope:
 
 - Dawn is the comparison baseline
 - Doe runs in Node.js, Bun, Deno, drop-in, and embedded/native lanes
-- ONNX Runtime substitution is the next integration investigation; the separate plugin EP does not establish that seam
-- browser `navigator.gpu` replacement is the strategic destination, with independently gated Chromium integration after native and transfer evidence
+- pinned ONNX Runtime WebGPU operators execute through Doe's explicit proc-table integration; local installation and bounded lifecycle evidence are established
+- material ONNX replacement advantage, broader compatibility, external reproduction, and retained adoption remain unestablished
+- browser `navigator.gpu` replacement is an optional, separately selected route; Fawn and browser optimization remain deferred
 
 That separation is deliberate. It keeps package ergonomics, runtime behavior,
 and browser integration from getting blurred together in docs or benchmarks.
@@ -204,7 +211,7 @@ do not prove that a declared accounting rule is semantically correct.
 
 The [source-layout manifest](../runtime/zig/source-layout.json) owns module
 responsibilities and dependency permissions; its [generated source map](../runtime/zig/src/README.md)
-is the navigation surface. The [target journeys](thesis.md#prioritized-target-journeys)
+is the navigation surface. The [application contexts](thesis.md#application-and-partner-contexts)
 exercise these owners rather than defining separate product subsystems. An
 image-processing integration supplies shaders, declared work, and acceptance
 tests; image-editor policy does not belong in resource management.
@@ -331,9 +338,9 @@ Those paths answer different questions and should not be described as the same
 thing.
 
 They also sit at different maturity levels. The browser shim is a present
-compatibility surface. The Fawn/Chromium lane is an active integration and
-release target against the Dawn-based runtime browsers ship today, but it
-remains diagnostic until a complete archive passes isolated clean install,
+compatibility surface. Fawn/Chromium is a retained experimental integration,
+deferred until explicitly selected. Its evidence remains diagnostic until a
+complete archive passes isolated clean install,
 forced-provider identity, an unchanged application oracle, and lifecycle gates.
 
 ## Build and evidence outputs

@@ -1,30 +1,37 @@
 # Doe
 
 Doe compiles WGSL shaders and runs WebGPU applications on native GPU backends.
-Use it through `doe-gpu`, or explore its Chromium integration, Fawn.
+The compiler and native runtime can earn adoption independently, with separate
+evidence. Vulkan is the current engineering focus.
+
+Start with the [ONNX Vulkan evaluation installation](docs/onnx-vulkan-installation.md).
+It runs pinned ONNX Runtime WebGPU operators through Doe, with unchanged
+SqueezeNet and bounded callback/lifecycle checks. The
+[delivery report](reports/releases/20261009-onnx-vulkan-evaluation/README.md) records
+local isolated installation and actual Doe execution. The archive remains in local
+binary custody; external reproduction, broader compatibility, retained adoption,
+and material replacement advantage remain unestablished. See the guide for host
+prerequisites, package acquisition, initialization, cleanup, and exclusions.
 
 ![Doe prepares a shader program and binds its data on the selected device, then executes GPU work.](assets/readme/execution.svg)
 
 Backend support and native/browser releases are qualified separately. See the
 [architecture](docs/architecture.md) and [support matrix](docs/doe-support-matrix.md).
 
-**[Try the Fawn demo](https://canvascontext.com/)** · [Run your first Doe kernel](#how-to-use-doe)
-
-Drag through the particles to change their motion. The browser demo uses your
-browser's WebGPU implementation. Running it in ordinary Chrome demonstrates the
-workload; running Doe itself requires the native package or a qualified Fawn build.
+**[Evaluate ONNX on Vulkan](docs/onnx-vulkan-installation.md)** · [Run your first Doe kernel](#how-to-use-doe)
 
 ## Mission, goal, and value
 
-Doe’s product is better execution for existing local applications: materially
+Doe’s product is better compilation and execution for existing local applications: materially
 faster operations, lower memory demands, and less CPU overhead through ordinary
 WebGPU substitution. [Goals](GOALS.md) and the [strategy](docs/thesis.md) order
 ordinary execution, independent framework integration through ONNX Runtime,
-binding application transfer, and bounded Chromium integration toward browser
-replacement. A milestone requires material advantage under declared regression
-limits, not simultaneous victory in every metric.
+and binding application transfer. Browser replacement is an optional, separately
+selected route; compiler adoption does not require runtime substitution. The
+application-advantage milestone requires material improvement under declared
+regression limits, not simultaneous victory in every metric.
 
-The primary goal is voluntary adoption by an unchanged external non-Doppler
+The runtime adoption goal is voluntary use by an unchanged external non-Doppler
 application for a predeclared measured advantage, followed by retention across
 another release or workload. Node/Bun runtime and Fawn/Chromium browser surfaces
 retain independent evidence gates. Each must run a named unchanged workload
@@ -36,16 +43,18 @@ runtime-ownership credit.
 
 Doe serves several audiences:
 
-- Application developers get governed provider selection, exact-output
-  evidence, and the owned runtime for explicit GPU execution.
+- Application developers get native GPU execution, explicit resource lifetimes,
+  and useful failures under declared numerical requirements.
 - Runtime and compiler engineers can inspect lowering, backend selection, and
   generated work.
 - Benchmark and release reviewers can trace a claim to its receipt and raw
   artifact.
 
-Doe owns the workload contract, execution policy, evidence classification, and
-release decision. It owns the runtime and compiler implementation but claims
-application value for them only after DoeRuntime beats the governed incumbent.
+Doe owns the compiler and runtime implementation. Compiler value includes
+compilation latency, diagnostics, supported semantics, and generated-program
+performance; runtime value includes memory, resource management, submission,
+completion, and integration. Each needs its own evidence. Receipts and
+qualification support those claims without becoming the product itself.
 Doppler, Dream, Columbo/Valera,
 Reploid/Poolday, Cerebras, Chromium/Fawn, and outside projects may provide
 workloads, hosts, baselines, or integration surfaces; they do not define Doe’s
@@ -72,8 +81,10 @@ hash-bound run, verification, inspection, replay, and exact-output comparison.
 Contributors making a Doe change should choose one workload and one correctness
 or performance question. Change [`runtime/zig/`](runtime/zig/) or
 [`packages/doe-gpu/`](packages/doe-gpu/), run the smallest relevant correctness
-test, then run the physical backend lane that matches the host: Metal on macOS,
-Vulkan on Linux, or D3D12 on Windows.
+test, then run the relevant qualified backend checks. Vulkan is the active engineering
+focus. Switching to Metal requires explicit prioritization and a handoff; D3D12
+remains deferred. These existing backend regression commands do not select
+parallel optimization campaigns.
 
 ```bash
 python3 bench/runners/run_recomposition_backend_evidence.py --backend metal
@@ -110,20 +121,22 @@ The latest physical backend bundle is
 [`backend-evidence.json`](runtime/zig/reports/recomposition/backend-evidence.json).
 Read the claim index and sidecars before repeating a result.
 
-## Long-term vision
+## Long-term value
 
-The long-term product is a receipt-backed local compute plane for AI workloads
-and autonomous software. A versioned workload enters under an explicit policy;
-Doe selects or enforces the provider, executes the workload, validates the
-result, and returns a receipt describing the run.
+Earn retained use through better compilation and execution across applications
+and qualified hardware. Independently installable compiler and runtime surfaces,
+clear interfaces, and maintained integration should make that value accessible.
+Receipts, replay, and qualification help diagnose failures and assess releases;
+ordinary execution does not require detailed tracing or artifact publication.
 
-Node, Bun, Electron, and controlled CI are the first runtime surfaces. Fawn is
-the first-class browser target: a released Chromium-family archive must run an
-unchanged WebGPU application through forced Doe with independently verified
-output, physical hardware identity, reliable lifecycle behavior, and a narrow
-measured advantage or compatibility benefit. Doe must earn each adjacent
-GPU-heavy browser workload separately. It is not an agent SDK, browser
-automation framework, or general Chromium fork.
+## Retained experimental integrations
+
+[Fawn's particle demo](https://canvascontext.com/) uses the browser's WebGPU
+implementation. Ordinary Chrome runs its own provider; loading `doe-gpu/browser`
+does not install Doe. The retained Fawn/Chromium integration remains diagnostic
+and deferred until an explicit selection decision and separate browser acceptance.
+Closed browser optimizer experiments remain closed; a new compiler opportunity
+needs its own consumer and acceptance rather than automatically reopening them.
 
 ## Limits and current status
 

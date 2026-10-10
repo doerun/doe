@@ -40,24 +40,63 @@ Promoted Node/Bun evidence should include cold and warm forms of:
 Internal phase timing remains useful for diagnosis. It cannot rescue an
 end-to-end loss.
 
-## Comparability requirements
+## Comparison classes
 
-Both products must use the same:
+Declare the comparison class before freezing a workload. Equivalent application
+work does not require identical internal implementation work. Missing required
+execution invalidates a comparison; verified elimination of unnecessary work may
+constitute the advantage.
 
-- workload inputs and output contract;
-- command and dispatch shape;
-- cache and preparation state;
-- upload, completion, and readback semantics;
-- hardware and driver environment;
-- timing class and normalization;
-- sample and warmup policy.
+### Unchanged-application replacement
 
-Skipped work, zero-dispatch asymmetry, missing timing phases, different
-readback paths, or hardware-specific shortcuts make a row diagnostic unless
-the workload explicitly declares the asymmetry and forbids generalization.
-Normalized workload-unit wall must contain the selected operation timing for
-each side. A negative wall-minus-operation gap is a normalization or scope
-failure and makes the comparison diagnostic.
+Require identical application inputs, requested work, output and numerical
+requirements, validation obligations, hardware/driver environment, and complete
+timing boundaries. Preserve upload visibility, ordering, completion, readback,
+resource lifetime, and failure semantics. Keep the application and its shaders
+unchanged. Internal allocations, copies, native submissions, cache strategies,
+and generated GPU programs may differ when they preserve these obligations.
+
+Record actual internal paths and explain eliminated work with execution and
+independent output evidence. Different readback mechanisms or shared-memory
+access replacing staging can be a legitimate advantage on the qualified hardware;
+they do not establish a portable or isolated operation-speed claim. A missing
+internal phase may reflect elimination, but a zero value alone never proves it.
+Absent required dispatch, completion, or readback remains an invalid comparison.
+
+Give both implementations equivalent application-level reuse opportunities,
+initial state, input history, warmup policy, and cache population opportunities.
+Measure cold initialization and preparation separately from declared resident
+operations, retain both, and prohibit one-sided precomputation or costs moved
+outside the declared boundary. Identical internal cache layouts are not required.
+
+### Fixed-operation or shader experiments
+
+Freeze the command/dispatch shape, repetitions, effective paths, preparation and
+cache conditions needed to isolate the named transformation. Declare exactly
+which compiler or runtime behavior may change; generated instructions need not
+be identical when code generation is the treatment. Matching effective readback
+paths is required when readback implementation is a control. A path difference
+outside the declared treatment is diagnostic, not an isolated operation win.
+Selected operation timing owns an operation-speed claim; switching to wall time
+after a loss cannot rescue it. A component win does not establish application value.
+
+## Shared comparability requirements
+
+Both classes require independent oracles, actual provider/backend identity,
+explicit fallback, complete timing scopes, matched sampling and normalization,
+raw samples, lifecycle checks, and predeclared acceptance thresholds. Audit
+unexplained zero phases and implausible wins before accepting any result. Do not
+invent symmetric costs for a verified eliminated phase, or hide a required phase
+because instrumentation did not capture it. Retain failures and adverse tails.
+Normalized workload-unit wall must contain selected operation timing for each
+side; a negative gap is a normalization or scope failure.
+
+This clarification is prospective. Existing frozen contracts, executable gates,
+thresholds, and historical verdicts retain their meaning. A new campaign must
+encode its class and treatment in its versioned workload contract and have gates
+that verify those obligations before claiming a result. If an existing gate only
+supports fixed-operation parity, extend that contract and its checks in the new
+campaign; prose is not permission to bypass a failing gate or relabel old results.
 
 ## Statistical requirements
 

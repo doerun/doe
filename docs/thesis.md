@@ -2,10 +2,19 @@
 
 Build the independent WebGPU compiler and runtime that makes existing local
 applications materially faster, less memory intensive, and cheaper in CPU overhead
-when they replace their execution provider. Local AI is the entry point;
-browser replacement is the destination.
+when they replace their execution provider. Local AI is an entry point; browser
+replacement is an optional, separately selected adoption route.
 
-DoeRuntime owns shader compilation, resource management, and GPU execution.
+Doe develops an independently usable WGSL compiler and native WebGPU runtime.
+Either may earn adoption without requiring the other. Their contributions require
+separate evidence. Compiler outcomes are compilation latency, diagnostics,
+supported shader semantics, and generated-program performance. Runtime outcomes
+are resource management, submission, completion, memory, and application integration.
+A new independent compiler campaign requires a concrete opportunity; closed
+browser optimizer experiments remain closed.
+
+The compiler owns WGSL meaning and target lowering; DoeRuntime owns resource
+management and GPU execution.
 Doppler owns models and inference and remains a demanding customer. Independent
 applications establish that improvements belong to the execution layer. DoeProof
 evaluates providers impartially. This document owns strategy; component charters
@@ -23,25 +32,37 @@ owns the ordered milestone IDs, binding proving set, and development metric.
    and memory victory is not required. Reject ineffective candidates, preserve
    the baseline, and record a new prioritization decision instead of extending
    one reranker indefinitely. Rejection does not satisfy the advantage milestone.
-2. Investigate independent framework substitution. First test Doe beneath ONNX
-   Runtime's existing native WebGPU provider, preserving its operators and
-   application interfaces. Do not assume a drop-in seam or build a competing
-   inference stack. Deliver a minimal executable prototype, compatibility gaps,
-   integration and maintenance costs, and an explicit feasibility decision.
-   Reconcile the [separate plugin EP](../runtime/bridge/onnxruntime-ep/README.md)
-   before expanding its implementation. A blocked prototype leaves acceptance open.
+2. Deliver independent framework integration. The pinned ONNX Runtime WebGPU
+   substitution already executes existing operators on the qualified Vulkan host.
+   The [campaign](onnx-vulkan-campaign-contract.md),
+   [lifecycle contract](native-device-lifecycle-contract.md), and
+   [evaluation installation](onnx-vulkan-installation.md) establish bounded
+   execution and local isolated installation. The matched source-built comparison
+   rejected material advantage. Broader compatibility, external reproduction,
+   material replacement value, and retained adoption remain open. Distribute the
+   versioned package for another operator, document its compatibility and failure
+   boundaries, and select further engineering from one real consumer requirement.
+   Keep the [separate plugin EP](../runtime/bridge/onnxruntime-ep/README.md)
+   as a historical experiment; do not repeat the initial feasibility investigation.
 3. Make transfer binding. Exercise inference, general computation, and interactive
    rendering through unchanged applications, independent correctness references,
    and complete-operation measurements. Another framework must earn independent
    adoption; Doppler diagnostics cannot establish it. General computation and
    rendering test generality without hidden model-specific behavior. Expand
    hardware around demonstrated advantages, with separate physical qualification.
-4. Attempt bounded Chromium integration after independent native wins and transfer
-   evidence. Preserve ordinary WebGPU behavior through validation and process
-   boundaries. Browser replacement is the destination; broader adoption requires
+4. Optionally select bounded Chromium integration after an explicit prioritization
+   decision, independent native wins, and transfer evidence. Preserve ordinary
+   WebGPU behavior through validation and process boundaries. Browser adoption requires
    compatibility, hostile-input security, graphics correctness, device recovery,
    maintainability, and application benefits. Existing browser evidence remains
    separately admitted; this ordering promotes no artifacts.
+
+These are ordered acceptance milestones, not a requirement to delay technical
+release or correctness work until a performance win or customer payment. The
+current emphasis is independent installation, one real consumer requirement, and
+retained use. No successor optimization campaign is selected automatically.
+Supported embedding, maintained binaries, and support are commercial hypotheses;
+validate repeated voluntary use before expanding paid offerings.
 
 Freeze primary metrics, material thresholds, regression bounds, percentile rules,
 and comparison scope before execution. Retain process variation, uncertainty,
@@ -88,8 +109,9 @@ The promise is the same useful computation with less repeated work, smaller
 resource demands, and clearer failures. Compatibility substitution and explicit
 program integration are different treatments: freeze and disclose each one,
 and give incumbent controls equivalent persistent pipelines, bindings, batching,
-and caches. An interface alone is not an ownership win if the same optimization
-works equally well above an incumbent.
+and caches at the application boundary; internal implementations may differ. An
+interface alone is not an ownership win if the same optimization works equally
+well above an incumbent.
 
 Prepared workflows already exist in
 [CUDA Graphs](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cuda-graphs.html),
@@ -147,7 +169,9 @@ batching, and caches. Report preparation, cold startup, repeated latency and CPU
 cost, peak memory, cancellation, recovery, and when preparation is recovered.
 Keep raw samples, tails, failures, and structural work. Distinguish process RSS
 and requested buffer bytes from peak GPU memory. Disclose host and effective
-readback differences rather than presenting them as runtime speed.
+readback mechanisms and verify equivalent output/completion semantics under
+the declared [comparison class](performance-strategy.md#comparison-classes).
+Verified elimination of unnecessary internal work can establish a scoped advantage.
 
 Cross a predeclared useful boundary: a missed interactive deadline, an analysis
 memory limit, or unacceptable repeated CPU cost. Numerical parity alone does
@@ -162,7 +186,9 @@ not establish adoption. Revenue is not required for the first proof.
 
 ## Ownership and independent controls
 
-DoeRuntime is primary. DoeProof remains useful around the strongest eligible
+The WGSL compiler and DoeRuntime are independently adoptable. Compiler evidence
+does not require runtime substitution; each surface must establish its own value
+and retained use. DoeProof remains useful around the strongest eligible
 incumbent and cannot select a favorable execution provider. Doppler remains
 a demanding inference customer; it receives no qualification preference and
 cannot supply independent adoption evidence.
@@ -179,8 +205,14 @@ Receipts cannot compensate for incorrect, unstable, incompatible, or slower work
 
 ## Focus and founder responsibilities
 
-The immediate engineering focus is verified application improvement. Measure
-reproduction-to-verified-improvement time from the retained reproducible problem
+Vulkan is the current engineering focus. Work proceeds in bounded batches.
+Switching to Metal requires an explicit prioritization decision and handoff;
+D3D12 remains deferred. Existing regression checks do not constitute parallel
+optimization campaigns. A consumer requirement informs the next selection; it
+cannot silently override this backend boundary.
+
+The immediate emphasis is independent installation and consumer-led engineering.
+Measure reproduction-to-verified-improvement time from the retained reproducible problem
 to independent confirmation under frozen acceptance. Link timestamps, source,
 and evidence in existing work records; keep rejected and unresolved attempts
 visible without treating them as verified improvements. No additional measurement
@@ -204,11 +236,11 @@ Exclude browser construction, Flutter replacement, peer networks, distributed
 training, and universal accelerator support from the first demonstration. Dynamic
 shapes follow explicit fixed-shape assumptions and verified invalidation.
 
-ONNX Runtime substitution is the next integration investigation. Browser
-replacement follows independent native and transfer evidence; Fawn remains
-separately gated. Existing A/B/C/D and K0 browser laws retain their meaning;
-browser construction does not gate the first native advantage. Accelerator work
-retains separate hardware admission and cannot broaden the initial matrix through simulator evidence.
+The ONNX Vulkan evaluation package is the current native integration front door.
+Independent reproduction and retained adoption remain open. Browser replacement
+requires a separate selection decision; Fawn stays deferred. Existing A/B/C/D and
+K0 browser laws retain their meaning. Accelerator work retains separate hardware
+admission and cannot broaden the active matrix through simulator evidence.
 
 ## Application and partner contexts
 
@@ -250,9 +282,10 @@ development, not a general agent framework.
 
 ### AI framework maintainer: improve execution beneath applications
 
-Investigate the same runtime beneath ONNX Runtime’s existing WebGPU provider
-before expanding a separate provider implementation. Preserve model interfaces
-and supported semantics; include loading, small dispatches, concurrency, and output transfers
+Evaluate the packaged pinned integration beneath ONNX Runtime’s existing WebGPU
+provider. Extend its qualified scope from a concrete consumer requirement. Preserve
+model interfaces and supported semantics; include loading, small dispatches,
+concurrency, and output transfers
 in inference comparisons across models. Framework distribution must demonstrate
 dependable upgrades and explicit unsupported operations. Doe does not acquire
 conversion, tokenization, or application-policy ownership.

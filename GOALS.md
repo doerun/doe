@@ -2,7 +2,10 @@
 
 ## Mission and thesis
 
-DoeRuntime is the independent, provider-neutral GPU compiler and native runtime in the `doe/` repository: the owned WGSL compiler, GPU runtime, resources, synchronization, lifecycle, and native backends.
+Doe develops an independently usable WGSL compiler and native WebGPU runtime.
+Either may earn adoption without requiring the other. Their contributions require
+separate evidence. DoeRuntime owns resources, synchronization, lifecycle, and
+native execution; the compiler owns shader meaning and target lowering.
 
 **GPU programs should be ordinary software: executable, inspectable, and portable across hardware.**
 
@@ -13,7 +16,15 @@ declared numerical requirements. Exact outputs are required where justified;
 other workloads use frozen, independently evaluated tolerances. Universal bit
 identity is not a product promise.
 
-## One product, two entrypoints
+## Independent compiler and runtime adoption
+
+Compiler outcomes include compilation latency, diagnostics, supported shader
+semantics, and generated-program performance. Runtime outcomes include resource
+management, submission, completion, memory, and application integration. A compiler
+result does not establish runtime adoption, or conversely. A new compiler campaign
+needs a concrete opportunity; closed browser optimizer experiments remain closed.
+
+## Runtime entrypoints
 
 Ordinary WebGPU through `doe-gpu` or native embedding is the first experience.
 Installation, startup, complete-operation latency, memory, and understandable
@@ -67,7 +78,8 @@ requires its declared evidence independently of what ordinary applications enabl
 - Deployment: No mandatory browser or cloud service. Platform drivers and frameworks remain dependencies; there is no universal zero-dependency or zero-allocation claim.
 - Support: Metal, Vulkan, D3D12, and additional operating systems earn support separately. iOS and Android require implemented paths and physical tests before support is promised.
 - Diagnostics: Report the best established source, validation, resource, submission, or native failure location. Do not invent a shader location for an unattributed hardware fault.
-- Acceptance sequence: Ordinary execution first, independent framework integration next, browser replacement as the destination. The ordered milestones and binding proving set live in [the strategy contract](config/doe-product-strategy.json), projected from [the thesis](docs/thesis.md).
+- Acceptance sequence: Ordinary execution, independent framework integration, and binding transfer establish native value. Browser replacement is an optional, separately selected adoption route. The ordered acceptance milestones live in [the strategy contract](config/doe-product-strategy.json), projected from [the thesis](docs/thesis.md); they do not block correctness repairs or independent installation work.
+- Backend focus: Vulkan is the current engineering focus. Work proceeds in bounded batches. Switching to Metal requires an explicit prioritization decision and handoff; D3D12 remains deferred. Existing regression checks do not constitute parallel optimization campaigns.
 
 ## Execution milestones
 
@@ -77,10 +89,21 @@ predeclared regression limits; simultaneous latency, CPU, and memory victory is
 not required. Reject ineffective candidates without extending one reranker
 indefinitely or declaring the advantage achieved.
 
-Next investigate replacing the implementation beneath ONNX Runtime’s existing
-WebGPU provider while preserving its operators and application interfaces.
-Deliver a minimal executable prototype, compatibility gaps, integration costs,
-and an explicit feasibility decision before expanding the separate plugin EP.
+The pinned ONNX Runtime integration already executes existing WebGPU operators
+through Doe on the qualified Vulkan host. The [campaign](docs/onnx-vulkan-campaign-contract.md),
+[lifecycle qualification](docs/native-device-lifecycle-contract.md), and
+[evaluation installation](docs/onnx-vulkan-installation.md) retain that bounded
+evidence. The versioned package has local isolated-installation acceptance.
+Material replacement advantage, broader compatibility, another operator's
+reproduction, and retained adoption remain unestablished.
+
+Next make that package available for independent installation, obtain one real
+consumer requirement, and select further engineering against agreed acceptance.
+Do not repeat initial substitution discovery or expand the experimental plugin's
+operator stack by default. Discovery and technical release are distinct gates;
+correctness, packaging, and useful engineering do not require a paying customer.
+Supported embedding, binaries, and maintained releases remain commercial
+hypotheses until repeated voluntary use demonstrates demand.
 
 Make inference, general computation, and interactive rendering binding transfer
 evidence through unchanged applications, independent correctness references, and
@@ -88,11 +111,11 @@ complete-operation measurements. Doppler owns models and inference and remains a
 demanding customer; another framework must establish independent adoption.
 Expand hardware coverage around demonstrated advantages.
 
-After independent native wins and transfer evidence, attempt bounded Chromium
-integration preserving ordinary WebGPU behavior through validation and process
+After explicit selection, independent native wins, and transfer evidence, attempt
+bounded Chromium integration preserving ordinary WebGPU behavior through validation and process
 boundaries. Broader browser adoption depends on compatibility, security,
-maintainability, and application benefits; it is a destination, not an achieved
-support claim.
+maintainability, and application benefits. Native or compiler adoption does not
+require browser replacement.
 
 Measure development by reproduction-to-verified-improvement time using existing
 work records. Keep compiler, backend, and host boundaries independently testable.

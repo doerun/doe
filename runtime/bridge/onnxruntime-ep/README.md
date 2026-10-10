@@ -8,36 +8,33 @@ Audience:
 This directory is the experimental bridge surface for a Doe-backed ONNX Runtime
 plugin execution provider.
 
-## Integration priority
+## Current integration: existing ONNX WebGPU operators on Vulkan
 
-The next integration milestone in the [strategy contract](../../../config/doe-product-strategy.json)
-is substitution beneath ONNX Runtime's existing native WebGPU provider, preserving
-its operators and application interfaces. [ONNX Runtime documents that provider](https://onnxruntime.ai/docs/execution-providers/WebGPU-ExecutionProvider.html)
-as using Dawn. This is a seam to investigate, not an established drop-in boundary.
+The pinned integration already runs ONNX Runtime's existing WebGPU operators
+through Doe's explicit proc-table bridge. It preserves the model and operator
+stack and requires the source-built provider/context adaptation; arbitrary stock
+wheels are not interchangeable. Start with the
+[ONNX Vulkan installation guide](../../../docs/onnx-vulkan-installation.md),
+[producer runbook](../../../bench/external-projects/onnx-vulkan-release/README.md),
+and [campaign runbook](../../../bench/external-projects/onnx-vulkan-campaign/README.md).
 
-The separate plugin EP below is a retained experiment, not the primary route to
-framework substitution. Its operator implementations and smoke results do not
-prove replacement beneath the existing provider. Do not expand its operator stack
-before recording the substitution feasibility decision.
+Established within the declared host/workload boundary:
 
-The investigation must:
+- [Pinned substitution and matched source-built comparison](../../../reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/README.md), with unchanged SqueezeNet and independent output validation.
+- [Callback qualification](../../../reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-callbacks/README.md) and [device lifecycle qualification](../../../reports/benchmarks/amd-vulkan/20261008-onnx-vulkan-device-lifecycle/README.md).
+- [Versioned evaluation delivery](../../../reports/releases/20261009-onnx-vulkan-evaluation/README.md), including deterministic reconstruction and local isolated installation.
 
-- Pin ONNX Runtime, Dawn, Doe, build dependencies, and an unchanged model and
-  application; first reproduce the existing WebGPU provider and independent oracle.
-- Inventory required C/C++ APIs, extensions, bindings, validation and robustness,
-  resource ownership, synchronization, readback, and build/link assumptions.
-  Distinguish a supported provider-loading seam from source adaptation costs.
-- Build and execute a minimal prototype replacing only the underlying WebGPU
-  implementation. Keep operators, application interfaces, work, and accepted
-  outputs unchanged; identify the actual provider and any unsupported boundary.
-- Retain compatibility gaps, required code changes, integration and maintenance
-  costs, complete-operation comparisons, and a feasible/conditional/infeasible
-  decision. Missing execution leaves the prototype milestone unestablished.
+Material replacement advantage was rejected under the frozen campaign criteria.
+Broader compatibility, another operator's deployment reproduction, and retained
+adoption remain unestablished. The evaluation archive has local binary custody;
+the tracked report is not public registry delivery.
 
-If substitution is infeasible, document the exact obstruction before choosing a
-new integration route. Plugin smoke success is not a substitute for this result.
+Next distribute the supported package for independent evaluation, obtain one real
+consumer requirement, and select bounded engineering against agreed acceptance.
+Do not rediscover initial substitution feasibility or expand the plugin operator
+stack by default. Correctness and packaging work do not require a paying customer.
 
-## Retained plugin experiment
+## Historical experimental plugin EP
 
 What is implemented today:
 
@@ -218,6 +215,5 @@ The vendored ORT headers and license are copied from the public ONNX Runtime
 repository and remain under the upstream MIT license in
 `vendor/onnxruntime/LICENSE`.
 
-Further plugin implementation is subordinate to the substitution feasibility
-decision above. Retain these smoke tools and historical results without treating
+Further plugin implementation requires a separately selected consumer need. Retain these smoke tools and historical results without treating
 them as evidence that the existing ONNX WebGPU provider runs through Doe.

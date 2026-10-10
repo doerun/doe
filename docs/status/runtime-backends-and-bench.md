@@ -164,13 +164,14 @@ are preserved.
 
 ## Current boundary
 
-The [strategy contract](../../config/doe-product-strategy.json) owns milestone
-order: ordinary execution, independent framework integration, binding transfer,
-and browser replacement. Ordinary material advantage, independent retained
-adoption, and complete transfer acceptance remain unestablished. Further reranker
-work requires explicit prioritization rather than an indefinite milestone.
-[ONNX Runtime substitution](../../runtime/bridge/onnxruntime-ep/README.md) requires
-an executable prototype and feasibility disposition before separate plugin expansion.
+The [strategy contract](../../config/doe-product-strategy.json) separates compiler
+and runtime adoption; its [migration](../product-strategy-contract.md) owns current
+work selection and prospective comparison classes. Vulkan remains the focus;
+Metal needs an explicit handoff, D3D12 stays deferred, and browser replacement is
+optional and separately selected. Initial ONNX execution and local isolated
+installation are established by the reports above. External reproduction,
+material application advantage, retained adoption, and complete transfer remain
+unestablished. No successor performance campaign is automatically selected.
 
 Retain the combined Vulkan memory policy, bounded completed-allocation reuse,
 writable-mapping repair, and failed-flush shutdown correction. The larger

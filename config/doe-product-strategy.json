@@ -1,7 +1,7 @@
 {
   "$schema": "doe-product-strategy.schema.json",
-  "schemaVersion": 5,
-  "strategyVersion": "4.0.0",
+  "schemaVersion": 6,
+  "strategyVersion": "5.0.0",
   "artifactKind": "doe-product-strategy",
   "authority": {
     "goals": "GOALS.md",
@@ -12,26 +12,37 @@
   },
   "positioning": {
     "category": "Independent WebGPU compiler and runtime for existing applications",
-    "promise": "Make existing local applications materially faster, less memory intensive, and cheaper in CPU overhead through ordinary WebGPU provider substitution.",
-    "governingQuestion": "Did this exact workload run correctly on the declared hardware and provider without hidden fallback, and did runtime ownership materially improve the application outcome?",
+    "promise": "Deliver independently usable WGSL compilation and native WebGPU execution; earn adoption through separately measured compiler or application value.",
+    "governingQuestion": "Does the selected compiler or runtime surface preserve its declared semantics and materially improve its consumer outcome under independent evidence?",
     "operatingLaw": "Hexagonal inside; vertically integrated outside."
   },
   "independenceBoundary": {
-    "rule": "Doppler remains a demanding inference customer and owns models and inference. Independent unchanged applications must establish execution-layer transfer and voluntary adoption. Ordinary execution comes first, ONNX Runtime substitution investigation next, binding application transfer next, and browser replacement is the destination. Prepared-program integration is a separate optional treatment.",
+    "rule": "The WGSL compiler and native WebGPU runtime can earn adoption independently; neither requires the other. Doppler owns models and inference. Independent installation, a real consumer requirement and retained use guide bounded work. Browser replacement is optional and separately selected; prepared-program integration is a separate treatment.",
     "requiredEvidence": [
-      "externally owned unchanged non-Doppler application",
-      "independent application oracle and clean-process replay",
-      "D0 materially improves the declared outcome over W0 and every credible eligible P0",
+      "externally owned non-Doppler consumer of the selected compiler or runtime surface",
+      "independent semantic oracle, pinned inputs and reproducible installation",
+      "separately measured compiler or runtime advantage against the strongest eligible controls",
       "voluntary maintainer adoption and retention across another release or workload",
       "production signer authorization independent of the execution provider"
     ]
   },
   "surfaces": [
     {
+      "id": "doecompiler",
+      "portfolioRole": "primary-product",
+      "marketRole": "compiler-adoption",
+      "job": "Provide independently usable WGSL analysis and target lowering. Evaluate compilation latency, diagnostics, supported shader semantics and generated-program performance separately from runtime execution.",
+      "promotionGate": "A concrete external compiler consumer verifies its declared outcome against independent controls and retains use without requiring DoeRuntime. New campaigns need explicit opportunity selection; closed browser transformations stay closed.",
+      "authorityPaths": [
+        "runtime/zig/src/compiler/CATSCAN.md",
+        "docs/status/compiler-and-webgpu.md"
+      ]
+    },
+    {
       "id": "doeruntime",
       "portfolioRole": "primary-product",
       "marketRole": "runtime-adoption",
-      "job": "Own source-preserving shader compilation, resource management, synchronization, and GPU execution beneath unchanged application interfaces; safe reuse supports these outcomes.",
+      "job": "Own WebGPU validation, resources, submission, completion, memory, synchronization and application integration. Runtime adoption does not require independent adoption of the owned compiler.",
       "promotionGate": "A frozen non-Doppler application demonstrates a material advantage over the strongest eligible controls; declared-program changes are disclosed; external adoption and repeat retention remain independently evidenced.",
       "authorityPaths": [
         "docs/runtime-ownership-decision.md",
@@ -53,8 +64,8 @@
       "id": "fawn",
       "portfolioRole": "experimental-distribution",
       "marketRole": "runtime-distribution",
-      "job": "Pursue browser replacement as the destination through a bounded Chromium integration after independent native wins and application transfer.",
-      "promotionGate": "Requires prior transferred runtime application wins and a separately hash-bound browser integration with unchanged causal controls.",
+      "job": "Retain experimental browser integration as an optional, separately selected adoption route after native wins and application transfer.",
+      "promotionGate": "Requires explicit prioritization, prior transferred runtime application wins and separately hash-bound browser integration with unchanged causal controls.",
       "authorityPaths": [
         "docs/browser-lane.md",
         "config/browser-product-comparison-policy.json",
@@ -77,7 +88,7 @@
     "id": "doeruntime-application-adoption",
     "name": "DoeRuntime Application Integration",
     "deliveryMode": "provider-substitution-or-declared-program",
-    "promise": "Earn voluntary use through independently measured ordinary provider-substitution advantage; optional declared computation remains a separate treatment.",
+    "promise": "Earn voluntary use through independently measured ordinary provider-substitution advantage; optional declared computation remains a separate treatment. Supported embedding, binaries and support remain commercial hypotheses; independent installation, a real consumer requirement and retained use precede expansion of paid offerings. Payment is not a technical-release prerequisite.",
     "buyers": [
       "local-AI vendors",
       "Electron application teams",
@@ -176,6 +187,11 @@
       "doe-runtime",
       "incumbent",
       "dual"
+    ],
+    "measurementAuthorityPath": "docs/performance-strategy.md",
+    "classes": [
+      "unchanged-application-replacement",
+      "fixed-operation-or-shader"
     ]
   },
   "externalProductComparison": {
@@ -309,21 +325,21 @@
     {
       "order": 1,
       "id": "amd-vulkan",
-      "purpose": "First deep optimization and heterogeneous-PC qualification lane.",
+      "purpose": "Current engineering focus; bounded Vulkan installation, correctness and consumer-led improvement batches.",
       "supportAuthorityPath": "docs/doe-support-matrix.md",
       "inheritsPromotion": false
     },
     {
       "order": 2,
       "id": "apple-metal",
-      "purpose": "Second high-quality native and client-side qualification lane.",
+      "purpose": "Requires an explicit prioritization decision and backend handoff after the selected Vulkan batch; existing regressions do not open an optimization campaign.",
       "supportAuthorityPath": "docs/doe-support-matrix.md",
       "inheritsPromotion": false
     },
     {
       "order": 3,
       "id": "windows-d3d12",
-      "purpose": "Separate Windows qualification lane; no support language before independent physical evidence.",
+      "purpose": "Deferred. Existing regression coverage grants no parallel optimization campaign or support without independent physical evidence.",
       "supportAuthorityPath": "docs/doe-support-matrix.md",
       "inheritsPromotion": false
     }
@@ -352,20 +368,23 @@
     {
       "order": 2,
       "id": "framework-substitution-v1",
-      "outcome": "Investigate Doe beneath ONNX Runtime's existing native WebGPU provider before expanding a separate inference plugin or operator stack. Preserve existing operators and application interfaces; do not assume a drop-in seam.",
+      "outcome": "Deliver the bounded integration beneath ONNX Runtime's existing WebGPU provider for independent installation. Pinned execution, matched source-built comparison, lifecycle qualification and local isolated package acceptance are established; material replacement advantage, broader compatibility, external reproduction and retained adoption remain unestablished.",
       "requiredEvidence": [
         "pinned ONNX Runtime and Dawn build plus existing provider baseline",
-        "inventory of ABI, bindings, extensions, resource ownership, synchronization and build integration dependencies",
-        "minimal executable substitution prototype with unchanged model and application interfaces",
-        "independent output oracle and complete-operation comparison",
-        "explicit compatibility gaps, required implementation changes and continuing integration costs",
-        "feasible, conditional or infeasible decision with reproducible evidence; unresolved prototype remains unestablished",
-        "separate plugin-provider documentation reconciled before implementation expands"
+        "explicit proc-table/context adaptation, ABI dependencies, compatibility boundaries and maintenance costs",
+        "retained unchanged-model execution through existing ONNX WebGPU operators and independent output oracle",
+        "matched complete-operation comparison with rejected material advantage preserved",
+        "versioned installable integration with initialization failures, callbacks, cleanup and supported-host qualification",
+        "external operator reproduction from delivered package without a producer checkout",
+        "one concrete consumer requirement and frozen acceptance for further engineering",
+        "separate plugin-provider experiment remains historical unless independently selected"
       ],
       "currentAssessment": "unestablished",
       "stateAuthorityPaths": [
         "docs/status/runtime-backends-and-bench.md",
-        "reports/claim-index.json"
+        "reports/claim-index.json",
+        "reports/releases/20261009-onnx-vulkan-evaluation/README.md",
+        "reports/benchmarks/amd-vulkan/20261005-onnx-vulkan-campaign/README.md"
       ]
     },
     {
@@ -390,8 +409,9 @@
     {
       "order": 4,
       "id": "chromium-substitution-v1",
-      "outcome": "Attempt bounded Chromium integration after independent native advantage and binding transfer evidence; browser replacement is the destination, with broader adoption conditional on compatibility, security, maintainability and application benefit.",
+      "outcome": "Optionally select bounded Chromium integration after explicit prioritization, independent native advantage and binding transfer evidence. Browser replacement is not required for compiler or native runtime adoption; broader browser acceptance requires compatibility, security, maintainability and application benefit.",
       "requiredEvidence": [
+        "explicit prioritization decision selecting the optional browser adoption route",
         "prior ordinary-execution advantage and independent native framework and transfer evidence",
         "pinned Chromium artifact and narrow unchanged application with independent oracle",
         "ordinary WebGPU semantics preserved through validation and process boundaries",
@@ -418,7 +438,10 @@
       "A component timing win does not imply an application win.",
       "Node, native, Apple, AMD, browser, and Windows evidence never inherit promotion from one another.",
       "A first qualification does not establish recurring commercial demand.",
-      "Paid qualification, DoeProof receipts, compiler breadth, internal benchmarks, and Doppler interoperability cannot substitute for DoeRuntime adoption."
+      "Paid qualification, DoeProof receipts, compiler breadth, internal benchmarks, and Doppler interoperability cannot substitute for DoeRuntime adoption.",
+      "Compiler adoption does not establish native runtime adoption, or conversely.",
+      "Verified elimination under a prospective application-replacement contract cannot relabel historical fixed-operation results.",
+      "Local isolated installation does not establish external operator reproduction or retained adoption."
     ],
     "currentStateAuthority": "reports/claim-index.json"
   },
@@ -431,18 +454,20 @@
     "adoptionBoundary": "Repository demonstrations do not establish external voluntary adoption or retention."
   },
   "executionOwnership": {
-    "operatingObjective": "Ordinary execution first, independent ONNX Runtime framework substitution next, binding inference/computation/rendering transfer, and browser replacement as the destination.",
-    "allocationPercent": {
-      "runtimeCompilerAndPlans": 60,
-      "externalWorkloadQualification": 25,
-      "packagingIntegration": 10,
-      "experimentalSurfaces": 5
+    "operatingObjective": "Prioritize independent installation of the existing Vulkan integration, one real consumer requirement and retained use. Ordered acceptance milestones do not block correctness, packaging or useful engineering. No successor benchmark is selected automatically.",
+    "workSelection": {
+      "mode": "bounded-batches",
+      "activeBackend": "amd-vulkan",
+      "metalTransition": "explicit-prioritization-and-handoff",
+      "d3d12": "deferred",
+      "browser": "explicit-selection-required",
+      "commercialFocus": [
+        "independent-installation",
+        "consumer-requirement",
+        "retained-use"
+      ]
     },
-    "externalApplicationRange": {
-      "minimum": 3,
-      "maximum": 5
-    },
-    "expansionPrerequisite": "Expand hardware around demonstrated application advantages. Reuse, refactoring and agent assistance support these milestones. Other framework, equipment, Flutter/Impeller and TSIR/Cerebras expansion remains subordinate and independently admitted."
+    "expansionPrerequisite": "Finish each selected Vulkan batch before selecting another. Existing backend regressions do not constitute parallel optimization campaigns. New compiler work needs a concrete opportunity. Expand support through explicit prioritization and separate physical qualification; customer payment is not a prerequisite for technical progress."
   },
   "provingSet": {
     "families": [

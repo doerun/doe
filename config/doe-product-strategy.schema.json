@@ -7,7 +7,7 @@
   "required": ["$schema", "schemaVersion", "strategyVersion", "artifactKind", "authority", "positioning", "independenceBoundary", "surfaces", "commercialOffer", "comparisonLaw", "externalProductComparison", "evidenceSpine", "customerEvidencePolicy", "platformSequence", "milestones", "claimBoundary", "reusableProgram", "executionOwnership", "provingSet", "developmentEffectiveness"],
   "properties": {
     "$schema": { "type": "string", "const": "doe-product-strategy.schema.json" },
-    "schemaVersion": { "type": "integer", "const": 5 },
+    "schemaVersion": { "type": "integer", "const": 6 },
     "strategyVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
     "artifactKind": { "type": "string", "const": "doe-product-strategy" },
     "authority": {
@@ -106,10 +106,18 @@
     "independenceBoundary": { "$ref": "#/$defs/independenceBoundary" },
     "surfaces": {
       "type": "array",
-      "minItems": 4,
-      "maxItems": 4,
+      "minItems": 5,
+      "maxItems": 5,
       "items": { "$ref": "#/$defs/surface" },
       "allOf": [
+        {
+          "contains": {
+            "properties": { "id": { "const": "doecompiler" } },
+            "required": ["id"]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
         {
           "contains": {
             "properties": {
@@ -156,21 +164,47 @@
     "comparisonLaw": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["authorityPath", "lanes", "selectionOutcomes"],
+      "required": [
+        "authorityPath",
+        "lanes",
+        "selectionOutcomes",
+        "measurementAuthorityPath",
+        "classes"
+      ],
       "properties": {
-        "authorityPath": { "$ref": "#/$defs/path" },
+        "authorityPath": {
+          "$ref": "#/$defs/path"
+        },
         "lanes": {
           "type": "array",
           "minItems": 5,
           "maxItems": 5,
-          "items": { "$ref": "#/$defs/comparisonLane" }
+          "items": {
+            "$ref": "#/$defs/comparisonLane"
+          }
         },
         "selectionOutcomes": {
           "type": "array",
           "minItems": 3,
           "maxItems": 3,
           "uniqueItems": true,
-          "items": { "type": "string", "enum": ["doe-runtime","incumbent","dual"] }
+          "items": {
+            "type": "string",
+            "enum": [
+              "doe-runtime",
+              "incumbent",
+              "dual"
+            ]
+          }
+        },
+        "measurementAuthorityPath": {
+          "$ref": "#/$defs/path"
+        },
+        "classes": {
+          "const": [
+            "unchanged-application-replacement",
+            "fixed-operation-or-shader"
+          ]
         }
       }
     },
@@ -333,8 +367,7 @@
       "additionalProperties": false,
       "required": [
         "operatingObjective",
-        "allocationPercent",
-        "externalApplicationRange",
+        "workSelection",
         "expansionPrerequisite"
       ],
       "properties": {
@@ -342,47 +375,39 @@
           "type": "string",
           "minLength": 1
         },
-        "allocationPercent": {
+        "workSelection": {
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "runtimeCompilerAndPlans",
-            "externalWorkloadQualification",
-            "packagingIntegration",
-            "experimentalSurfaces"
+            "mode",
+            "activeBackend",
+            "metalTransition",
+            "d3d12",
+            "browser",
+            "commercialFocus"
           ],
           "properties": {
-            "runtimeCompilerAndPlans": {
-              "type": "integer",
-              "const": 60
+            "mode": {
+              "const": "bounded-batches"
             },
-            "externalWorkloadQualification": {
-              "type": "integer",
-              "const": 25
+            "activeBackend": {
+              "const": "amd-vulkan"
             },
-            "packagingIntegration": {
-              "type": "integer",
-              "const": 10
+            "metalTransition": {
+              "const": "explicit-prioritization-and-handoff"
             },
-            "experimentalSurfaces": {
-              "type": "integer",
-              "const": 5
-            }
-          }
-        },
-        "externalApplicationRange": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "minimum",
-            "maximum"
-          ],
-          "properties": {
-            "minimum": {
-              "const": 3
+            "d3d12": {
+              "const": "deferred"
             },
-            "maximum": {
-              "const": 5
+            "browser": {
+              "const": "explicit-selection-required"
+            },
+            "commercialFocus": {
+              "const": [
+                "independent-installation",
+                "consumer-requirement",
+                "retained-use"
+              ]
             }
           }
         },
@@ -422,14 +447,26 @@
       "additionalProperties": false,
       "required": ["id", "portfolioRole", "marketRole", "job", "promotionGate", "authorityPaths"],
       "properties": {
-        "id": { "type": "string", "enum": ["doeproof","doeruntime","fawn","doelab"] },
+        "id": { "type": "string", "enum": ["doecompiler","doeproof","doeruntime","fawn","doelab"] },
         "portfolioRole": { "type": "string", "enum": ["primary-product", "product-feature", "secondary-product", "operating-model", "experimental-distribution"] },
-        "marketRole": { "type": "string", "enum": ["runtime-adoption","qualification-evidence","runtime-distribution","learning-loop"] },
+        "marketRole": { "type": "string", "enum": ["compiler-adoption","runtime-adoption","qualification-evidence","runtime-distribution","learning-loop"] },
         "job": { "type": "string", "minLength": 1 },
         "promotionGate": { "type": "string", "minLength": 1 },
         "authorityPaths": { "$ref": "#/$defs/pathList" }
       },
       "allOf": [
+        {
+          "if": {
+            "properties": { "id": { "const": "doecompiler" } },
+            "required": ["id"]
+          },
+          "then": {
+            "properties": {
+              "portfolioRole": { "const": "primary-product" },
+              "marketRole": { "const": "compiler-adoption" }
+            }
+          }
+        },
         {
           "if": {
             "properties": {

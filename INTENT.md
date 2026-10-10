@@ -9,9 +9,10 @@ and safe reuse of repeated work across qualified hardware without hidden fallbac
 
 ## Target
 
-Deliver one independent compiler/runtime through ordinary WebGPU and optional
-reusable programs. Preserve supported application semantics and declared numerical
-requirements; earn adoption through measured application advantage. Qualification
+Deliver an independently usable WGSL compiler and native WebGPU runtime; either
+may earn adoption without the other, with separate evidence. Runtime entrypoints
+include ordinary WebGPU and optional reusable programs. Preserve supported
+application semantics and declared numerical requirements. Qualification
 receipts evaluate this product without becoming mandatory application machinery.
 
 ## Invariants
