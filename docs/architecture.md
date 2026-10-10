@@ -5,40 +5,12 @@
 These views trace source at `49f6e0af0`: compiler ownership, native execution,
 and optional prepared-program lifetimes. They explain implementation boundaries;
 they do not extend the [qualified support matrix](doe-support-matrix.md).
-The README hero shows the product relationship; these diagrams show the machinery.
+The README contains the diagrams; this guide explains their source boundaries
+and execution contracts.
 
 ### Compiler and runtime ownership
 
-```mermaid
-flowchart TB
-    APP["Application or framework<br/>WGSL, descriptors, inputs"]
-    JS["doe-gpu native bindings<br/>JavaScript values and callbacks"]
-    EMBED["Native embedding / proc table<br/>WebGPU ABI calls"]
-    API["Native WebGPU objects<br/>validation, references, command recording"]
-    FRONT["WGSL frontend<br/>parse and semantic analysis"]
-    IR["Typed IR<br/>validation, robustness, rewrites"]
-    EMIT["Target lowering and emission<br/>SPIR-V, MSL, HLSL / DXIL"]
-    BACK["Selected native backend<br/>resources, pipelines, synchronization"]
-    DRIVER["Platform API and driver<br/>target compilation and GPU execution"]
-    COMP["Independent compiler caller<br/>source, options, allocator, diagnostics"]
-    CODE["Emitted shader and diagnostics<br/>caller owns subsequent integration"]
-    APP --> JS --> API
-    APP --> EMBED --> API
-    API -->|shader preparation| FRONT
-    COMP --> FRONT --> IR --> EMIT
-    EMIT --> CODE
-    EMIT -->|target shader| BACK
-    API -->|resources and recorded work| BACK
-    BACK --> DRIVER
-    classDef host fill:#ffffff,stroke:#111827,color:#111827
-    classDef compiler fill:#f3edff,stroke:#7c3aed,color:#111827
-    classDef runtime fill:#edf3ff,stroke:#2563eb,color:#111827
-    classDef hardware fill:#fff0f3,stroke:#e11d48,color:#111827
-    class APP,JS,EMBED,COMP,CODE host
-    class FRONT,IR,EMIT compiler
-    class API,BACK runtime
-    class DRIVER hardware
-```
+[View this diagram in the README.](../README.md#compiler-and-runtime-ownership)
 
 Arrows represent calls or data flow, not unrestricted imports. The compiler can
 return target code without opening a Doe device. Native execution selects a
@@ -65,33 +37,7 @@ This follows ordinary native WebGPU compute through the Vulkan submission
 adapter. Host bindings translate the API calls; they do not interpret WGSL or
 implement the kernel's arithmetic.
 
-```mermaid
-sequenceDiagram
-    participant A as Application / binding
-    participant N as Native object layer
-    participant C as WGSL compiler
-    participant V as Vulkan backend
-    participant G as Driver / GPU
-    A->>N: Create shader, layout, pipeline, buffers, bind group
-    N->>C: Analyze source and compile declared entry point / overrides
-    C-->>N: Target code and reflection, or diagnostic failure
-    N->>V: Prepare compatible pipeline and native resources
-    V->>G: Create device-specific pipeline and allocations
-    N-->>A: WebGPU handles, or reported creation failure
-    A->>N: Encode bindings, dispatch, and requested copies
-    N->>N: Validate and retain command resource references
-    A->>N: finish(), then queue.submit(commandBuffers)
-    N->>V: Replay recorded commands with validated bindings
-    V->>G: Submit GPU work and track completion
-    N-->>A: Submission returns before completion is guaranteed
-    A->>N: onSubmittedWorkDone() / mapAsync() as required
-    N->>V: Observe queue completion and mapping readiness
-    G-->>V: Completion or native failure
-    V-->>N: Settled status and requested output visibility
-    N-->>A: Deliver callback / mapping result or error
-    A->>N: Release handles when no longer needed
-    N->>V: Release owned resources under lifetime rules
-```
+[View this diagram in the README.](../README.md#native-compute-submission-and-completion)
 
 Recording, submission, completion, and readable output are distinct boundaries.
 Command references retain their dependencies. A caller's timeout does not prove
@@ -110,35 +56,7 @@ and [queue lifecycle](../runtime/zig/src/native/queue/doe_queue_lifecycle.zig).
 Ordinary WebGPU does not require it. The diagram separates the immutable
 description, prepared resources, each invocation, and structural replacement.
 
-```mermaid
-flowchart TB
-    DESC["Immutable program descriptor<br/>shaders, bindings, buffers, steps, output"]
-    PREP["prepareComputeProgram(device, descriptor, options)<br/>validate identity and execution mode"]
-    READY["Ready program<br/>device-specific resources and resident state"]
-    RUN["run(inputs, signal)<br/>reject overlapping work and conflicting leases"]
-    WAIT["Submission and completion<br/>await queue and any readback mapping"]
-    OUT["Result or failure<br/>release invocation input leases"]
-    UPDATE["Assess and authorize update<br/>bind approval to this instance and revision"]
-    BUILD["Prepare replacement<br/>reuse compatible resources"]
-    NEXT["New ready program<br/>retire old instance after successful preparation"]
-    CLOSE["close()<br/>reject new work, await active operation, release"]
-    DESC --> PREP --> READY
-    READY --> RUN --> WAIT --> OUT
-    OUT -->|successful settled run| READY
-    OUT -->|invalidated state| CLOSE
-    READY --> UPDATE --> BUILD
-    BUILD -->|success| NEXT
-    BUILD -->|failure, original remains open| READY
-    READY --> CLOSE
-    classDef contract fill:#f3edff,stroke:#7c3aed,color:#111827
-    classDef resident fill:#edf3ff,stroke:#2563eb,color:#111827
-    classDef invocation fill:#ffffff,stroke:#111827,color:#111827
-    classDef compute fill:#fff0f3,stroke:#e11d48,color:#111827
-    class DESC,PREP,UPDATE contract
-    class READY,BUILD,NEXT resident
-    class RUN,OUT,CLOSE invocation
-    class WAIT compute
-```
+[View this diagram in the README.](../README.md#optional-prepared-program-resource-lifetime)
 
 The selectable modes are `webgpu`, `native-recorded`, and the supported Vulkan
 `gpu-recorded` path. A missing provider or incompatible native contract is an
