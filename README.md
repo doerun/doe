@@ -16,7 +16,8 @@ prerequisites, package acquisition, initialization, cleanup, and exclusions.
 ![Doe prepares a shader program and binds its data on the selected device, then executes GPU work.](assets/readme/execution.svg)
 
 Backend support and native/browser releases are qualified separately. See the
-[architecture](docs/architecture.md) and [support matrix](docs/doe-support-matrix.md).
+[technical diagrams: compiler, execution, resource lifetime](docs/architecture.md#technical-diagrams)
+and [support matrix](docs/doe-support-matrix.md).
 
 **[Evaluate ONNX on Vulkan](docs/onnx-vulkan-installation.md)** · [Run your first Doe kernel](#how-to-use-doe)
 

@@ -34,7 +34,7 @@ evidence boundaries are clear.
 - [`runtime-ownership-decision.md`](runtime-ownership-decision.md): four-lane
   DoeProof-versus-DoeRuntime attribution, operational trust, ownership cost,
   application tiers, and expansion admission
-- [`architecture.md`](architecture.md): system surfaces and execution model
+- [`architecture.md`](architecture.md#technical-diagrams): compiler/runtime ownership, native submission, prepared-resource lifetimes, and system surfaces
 - [`implementation-peers.md`](implementation-peers.md): generated implementation
   inventory, compiler identities, provider IDs and tracking pointers
 - [`runtime-hexagonal-architecture-plan.md`](runtime-hexagonal-architecture-plan.md): completed Zig migration history and current architecture owners

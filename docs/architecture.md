@@ -1,5 +1,161 @@
 # Doe architecture
 
+## Technical diagrams
+
+These views trace source at `49f6e0af0`: compiler ownership, native execution,
+and optional prepared-program lifetimes. They explain implementation boundaries;
+they do not extend the [qualified support matrix](doe-support-matrix.md).
+The README hero shows the product relationship; these diagrams show the machinery.
+
+### Compiler and runtime ownership
+
+```mermaid
+flowchart TB
+    APP["Application or framework<br/>WGSL, descriptors, inputs"]
+    JS["doe-gpu native bindings<br/>JavaScript values and callbacks"]
+    EMBED["Native embedding / proc table<br/>WebGPU ABI calls"]
+    API["Native WebGPU objects<br/>validation, references, command recording"]
+    FRONT["WGSL frontend<br/>parse and semantic analysis"]
+    IR["Typed IR<br/>validation, robustness, rewrites"]
+    EMIT["Target lowering and emission<br/>SPIR-V, MSL, HLSL / DXIL"]
+    BACK["Selected native backend<br/>resources, pipelines, synchronization"]
+    DRIVER["Platform API and driver<br/>target compilation and GPU execution"]
+    COMP["Independent compiler caller<br/>source, options, allocator, diagnostics"]
+    CODE["Emitted shader and diagnostics<br/>caller owns subsequent integration"]
+    APP --> JS --> API
+    APP --> EMBED --> API
+    API -->|shader preparation| FRONT
+    COMP --> FRONT --> IR --> EMIT
+    EMIT --> CODE
+    EMIT -->|target shader| BACK
+    API -->|resources and recorded work| BACK
+    BACK --> DRIVER
+    classDef host fill:#ffffff,stroke:#111827,color:#111827
+    classDef compiler fill:#f3edff,stroke:#7c3aed,color:#111827
+    classDef runtime fill:#edf3ff,stroke:#2563eb,color:#111827
+    classDef hardware fill:#fff0f3,stroke:#e11d48,color:#111827
+    class APP,JS,EMBED,COMP,CODE host
+    class FRONT,IR,EMIT compiler
+    class API,BACK runtime
+    class DRIVER hardware
+```
+
+Arrows represent calls or data flow, not unrestricted imports. The compiler can
+return target code without opening a Doe device. Native execution selects a
+backend rather than cascading through hidden fallback providers. Emission and
+backend implementation do not by themselves establish platform qualification.
+Vulkan is the active engineering focus; other targets retain their own scope.
+
+The browser wrapper uses the browser's existing WebGPU provider. It does not
+install this native runtime into ordinary Chrome. Browser compiler use and the
+experimental Fawn runtime integration are separate entry points. DoeProof and
+offline improvement tooling are outside the ordinary execution path.
+
+| Boundary | Implementation |
+| --- | --- |
+| JavaScript native provider | [native.js](../packages/doe-gpu/src/native.js), [vendor WebGPU bindings](../packages/doe-gpu/src/vendor/webgpu/) |
+| Native objects and command recording | [native API exports](../runtime/zig/src/native/api/), [doe_command_recording.zig](../runtime/zig/src/native/command/doe_command_recording.zig) |
+| Parse, type, and transform | [analysis.zig](../runtime/zig/src/compiler/wgsl/pipeline/analysis.zig) |
+| Target lowering | [translate_spirv.zig](../runtime/zig/src/compiler/wgsl/pipeline/translate_spirv.zig), [compiler architecture](shader-compiler-architecture.md) |
+| Backend-private execution | [backend implementations](../runtime/zig/src/backend/), [shared contracts](../runtime/zig/src/contracts/) |
+
+### Native compute submission and completion
+
+This follows ordinary native WebGPU compute through the Vulkan submission
+adapter. Host bindings translate the API calls; they do not interpret WGSL or
+implement the kernel's arithmetic.
+
+```mermaid
+sequenceDiagram
+    participant A as Application / binding
+    participant N as Native object layer
+    participant C as WGSL compiler
+    participant V as Vulkan backend
+    participant G as Driver / GPU
+    A->>N: Create shader, layout, pipeline, buffers, bind group
+    N->>C: Analyze source and compile declared entry point / overrides
+    C-->>N: Target code and reflection, or diagnostic failure
+    N->>V: Prepare compatible pipeline and native resources
+    V->>G: Create device-specific pipeline and allocations
+    N-->>A: WebGPU handles, or reported creation failure
+    A->>N: Encode bindings, dispatch, and requested copies
+    N->>N: Validate and retain command resource references
+    A->>N: finish(), then queue.submit(commandBuffers)
+    N->>V: Replay recorded commands with validated bindings
+    V->>G: Submit GPU work and track completion
+    N-->>A: Submission returns before completion is guaranteed
+    A->>N: onSubmittedWorkDone() / mapAsync() as required
+    N->>V: Observe queue completion and mapping readiness
+    G-->>V: Completion or native failure
+    V-->>N: Settled status and requested output visibility
+    N-->>A: Deliver callback / mapping result or error
+    A->>N: Release handles when no longer needed
+    N->>V: Release owned resources under lifetime rules
+```
+
+Recording, submission, completion, and readable output are distinct boundaries.
+Command references retain their dependencies. A caller's timeout does not prove
+GPU completion or authorize early reuse. Device loss and submission failures
+must reach the caller; this sequence's successful path is not a claim that every
+failure or backend has passed physical acceptance.
+
+Source owners: [command references](../runtime/zig/src/native/command/doe_command_references.zig),
+[queue dispatch](../runtime/zig/src/native/queue/doe_queue_submit_native.zig),
+[Vulkan command submission](../runtime/zig/src/native/queue/doe_queue_submit_vulkan.zig),
+and [queue lifecycle](../runtime/zig/src/native/queue/doe_queue_lifecycle.zig).
+
+### Optional prepared-program resource lifetime
+
+`doe-gpu/compute-program` adds explicit reuse for fixed-shape buffer computation.
+Ordinary WebGPU does not require it. The diagram separates the immutable
+description, prepared resources, each invocation, and structural replacement.
+
+```mermaid
+flowchart TB
+    DESC["Immutable program descriptor<br/>shaders, bindings, buffers, steps, output"]
+    PREP["prepareComputeProgram(device, descriptor, options)<br/>validate identity and execution mode"]
+    READY["Ready program<br/>device-specific resources and resident state"]
+    RUN["run(inputs, signal)<br/>reject overlapping work and conflicting leases"]
+    WAIT["Submission and completion<br/>await queue and any readback mapping"]
+    OUT["Result or failure<br/>release invocation input leases"]
+    UPDATE["Assess and authorize update<br/>bind approval to this instance and revision"]
+    BUILD["Prepare replacement<br/>reuse compatible resources"]
+    NEXT["New ready program<br/>retire old instance after successful preparation"]
+    CLOSE["close()<br/>reject new work, await active operation, release"]
+    DESC --> PREP --> READY
+    READY --> RUN --> WAIT --> OUT
+    OUT -->|successful settled run| READY
+    OUT -->|invalidated state| CLOSE
+    READY --> UPDATE --> BUILD
+    BUILD -->|success| NEXT
+    BUILD -->|failure, original remains open| READY
+    READY --> CLOSE
+    classDef contract fill:#f3edff,stroke:#7c3aed,color:#111827
+    classDef resident fill:#edf3ff,stroke:#2563eb,color:#111827
+    classDef invocation fill:#ffffff,stroke:#111827,color:#111827
+    classDef compute fill:#fff0f3,stroke:#e11d48,color:#111827
+    class DESC,PREP,UPDATE contract
+    class READY,BUILD,NEXT resident
+    class RUN,OUT,CLOSE invocation
+    class WAIT compute
+```
+
+The selectable modes are `webgpu`, `native-recorded`, and the supported Vulkan
+`gpu-recorded` path. A missing provider or incompatible native contract is an
+error, not permission to switch modes silently. Hashes identify candidates;
+compatible resource declarations and device ownership govern actual reuse.
+Resident-state resets in the strict update contract require approval bound to
+the assessed edit. Cancellation does not interrupt already submitted GPU work.
+Failures after submission can invalidate the program rather than make its
+resident state available for another successful run.
+
+[compute-program.js](../packages/doe-gpu/src/compute-program.js) owns preparation,
+invocation, update, and close; [completion](../packages/doe-gpu/src/compute-program-completion.js)
+settles both queue and mapping promises; [residency](../packages/doe-gpu/src/compute-program-residency.js)
+owns resource leases; [update authorization](../packages/doe-gpu/src/compute-program-update.js)
+binds reset approval. The [reusable-program contract](reusable-compute-programs.md)
+defines supported shapes and mode limits.
+
 ## System surfaces
 
 Doe develops an independently usable WGSL compiler and native WebGPU runtime.
