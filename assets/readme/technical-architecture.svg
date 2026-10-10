@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="740" viewBox="0 0 1200 740" role="img" aria-labelledby="title desc">
+<title id="title">Doe: technical architecture</title>
+<desc id="desc">Nine components show native WebGPU objects branching into WGSL compilation, resource ownership, and command recording. Pipelines and bind groups converge in recorded work, then backend submission reaches the GPU. Completion returns callbacks and constrains resource retirement.</desc>
+<style>text{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.label{font-size:14px;font-weight:500;paint-order:stroke;stroke:white;stroke-width:6px;stroke-linejoin:round}</style>
+<defs>
+<marker id="ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#16181d" stroke-width="1.5"/></marker>
+<marker id="purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#7441ce" stroke-width="1.5"/></marker>
+<marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#245cd6" stroke-width="1.5"/></marker>
+<marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#d52749" stroke-width="1.5"/></marker>
+<marker id="gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#626976" stroke-width="1.5"/></marker>
+</defs>
+<rect x="1" y="1" width="1198" height="738" rx="18" fill="white" stroke="#dcdfe6"/>
+<text x="40" y="44" font-size="22" fill="#16181d" font-weight="650" text-anchor="start">doe</text>
+<text x="1160" y="44" font-size="12" fill="#626976" font-weight="500" text-anchor="end">TECHNICAL ARCHITECTURE</text>
+<text x="40" y="80" font-size="23" fill="#16181d" font-weight="600" text-anchor="start">Shader, resources, and commands converge</text>
+<path d="M360 179 H452" fill="none" stroke="white" stroke-width="6"/>
+<path d="M360 179 H452" fill="none" stroke="#16181d" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#ink)"/>
+<text x="406" y="169" font-size="14" fill="#626976" font-weight="500" text-anchor="middle" class="label">calls</text>
+<path d="M748 179 H840" fill="none" stroke="white" stroke-width="6"/>
+<path d="M748 179 H840" fill="none" stroke="#7441ce" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#purple)"/>
+<text x="794" y="169" font-size="14" fill="#7441ce" font-weight="500" text-anchor="middle" class="label">WGSL</text>
+<path d="M500 228 V267 H212 V310" fill="none" stroke="white" stroke-width="6"/>
+<path d="M500 228 V267 H212 V310" fill="none" stroke="#245cd6" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#blue)"/>
+<text x="343" y="259" font-size="14" fill="#245cd6" font-weight="500" text-anchor="middle" class="label">allocate / upload</text>
+<path d="M600 228 V310" fill="none" stroke="white" stroke-width="6"/>
+<path d="M600 228 V310" fill="none" stroke="#16181d" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#ink)"/>
+<text x="600" y="273" font-size="14" fill="#626976" font-weight="500" text-anchor="middle" class="label">encode</text>
+<path d="M988 228 V310" fill="none" stroke="white" stroke-width="6"/>
+<path d="M988 228 V310" fill="none" stroke="#7441ce" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#purple)"/>
+<text x="988" y="273" font-size="14" fill="#7441ce" font-weight="500" text-anchor="middle" class="label">target code + reflection</text>
+<path d="M360 359 H452" fill="none" stroke="white" stroke-width="6"/>
+<path d="M360 359 H452" fill="none" stroke="#245cd6" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#blue)"/>
+<text x="406" y="349" font-size="14" fill="#245cd6" font-weight="500" text-anchor="middle" class="label">bindings</text>
+<path d="M840 359 H748" fill="none" stroke="white" stroke-width="6"/>
+<path d="M840 359 H748" fill="none" stroke="#7441ce" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#purple)"/>
+<text x="794" y="349" font-size="14" fill="#7441ce" font-weight="500" text-anchor="middle" class="label">pipeline</text>
+<path d="M600 408 V510" fill="none" stroke="white" stroke-width="6"/>
+<path d="M600 408 V510" fill="none" stroke="#16181d" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#ink)"/>
+<text x="600" y="465" font-size="14" fill="#626976" font-weight="500" text-anchor="middle" class="label">command buffers</text>
+<path d="M748 559 H840" fill="none" stroke="white" stroke-width="6"/>
+<path d="M748 559 H840" fill="none" stroke="#d52749" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#red)"/>
+<text x="794" y="549" font-size="14" fill="#d52749" font-weight="500" text-anchor="middle" class="label">submit</text>
+<path d="M988 608 V643 H212 V608" fill="none" stroke="white" stroke-width="6"/>
+<path d="M988 608 V643 H212 V608" fill="none" stroke="#d52749" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#red)"/>
+<text x="600" y="635" font-size="14" fill="#d52749" font-weight="500" text-anchor="middle" class="label">completion / requested readback / native failure</text>
+<path d="M64 554 H30 V279 H480 V228" fill="none" stroke="white" stroke-width="6"/>
+<path d="M64 554 H30 V279 H480 V228" fill="none" stroke="#16181d" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#ink)"/>
+<text x="220" y="270" font-size="14" fill="#626976" font-weight="500" text-anchor="middle" class="label">callbacks and mapped results</text>
+<path d="M212 510 V408" fill="none" stroke="white" stroke-width="6"/>
+<path d="M212 510 V408" fill="none" stroke="#245cd6" stroke-width="1.8" stroke-linejoin="round" stroke-dasharray="5 5" marker-end="url(#blue)"/>
+<text x="212" y="465" font-size="14" fill="#245cd6" font-weight="500" text-anchor="middle" class="label">safe retirement</text>
+<path d="M452 205 H360" fill="none" stroke="white" stroke-width="6"/>
+<path d="M452 205 H360" fill="none" stroke="#16181d" stroke-width="1.8" stroke-linejoin="round" marker-end="url(#ink)"/>
+<text x="406" y="223" font-size="14" fill="#626976" font-weight="500" text-anchor="middle" class="label">results</text>
+<g data-component="Application / framework"><rect x="64" y="130" width="296" height="98" rx="10" fill="#ffffff" stroke="#16181d" stroke-width="1.3"/>
+<text x="82" y="151" font-size="11" fill="#16181d" font-weight="600" text-anchor="start">ORDINARY WEBGPU</text>
+<text x="82" y="176" font-size="19" fill="#16181d" font-weight="600" text-anchor="start">Application / framework</text>
+<text x="82" y="199" font-size="14" fill="#626976" font-weight="400" text-anchor="start">WGSL, descriptors, input data</text>
+</g>
+<g data-component="Bindings + native objects"><rect x="452" y="130" width="296" height="98" rx="10" fill="#ffffff" stroke="#16181d" stroke-width="1.3"/>
+<text x="470" y="151" font-size="11" fill="#16181d" font-weight="600" text-anchor="start">JAVASCRIPT OR NATIVE ABI</text>
+<text x="470" y="176" font-size="19" fill="#16181d" font-weight="600" text-anchor="start">Bindings + native objects</text>
+<text x="470" y="199" font-size="14" fill="#626976" font-weight="400" text-anchor="start">Validation, handles, callbacks</text>
+</g>
+<g data-component="WGSL compiler"><rect x="840" y="130" width="296" height="98" rx="10" fill="#f7f3ff" stroke="#7441ce" stroke-width="1.3"/>
+<text x="858" y="151" font-size="11" fill="#7441ce" font-weight="600" text-anchor="start">INDEPENDENTLY CALLABLE</text>
+<text x="858" y="176" font-size="19" fill="#16181d" font-weight="600" text-anchor="start">WGSL compiler</text>
+<text x="858" y="199" font-size="14" fill="#626976" font-weight="400" text-anchor="start">Parse → typed IR → target lowering</text>
+</g>
+<g data-component="Resources + bind groups"><rect x="64" y="310" width="296" height="98" rx="10" fill="#f2f6ff" stroke="#245cd6" stroke-width="1.3"/>
+<text x="82" y="331" font-size="11" fill="#245cd6" font-weight="600" text-anchor="start">OWNERSHIP</text>
+<text x="82" y="356" font-size="19" fill="#16181d" font-weight="600" text-anchor="start">Resources + bind groups</text>
+<text x="82" y="379" font-size="14" fill="#626976" font-weight="400" text-anchor="start">Buffers, textures, views, references</text>
+</g>
+<g data-component="Command recording"><rect x="452" y="310" width="296" height="98" rx="10" fill="#ffffff" stroke="#16181d" stroke-width="1.3"/>
+<text x="470" y="331" font-size="11" fill="#16181d" font-weight="600" text-anchor="start">RECORDING</text>
+<text x="470" y="356" font-size="19" fill="#16181d" font-weight="600" text-anchor="start">Command recording</text>
+<text x="470" y="379" font-size="14" fill="#626976" font-weight="400" text-anchor="start">Dispatches, copies, retained references</text>
+</g>
+<g data-component="Device pipelines + layouts"><rect x="840" y="310" width="296" height="98" rx="10" fill="#f7f3ff" stroke="#7441ce" stroke-width="1.3"/>
+<text x="858" y="331" font-size="11" fill="#7441ce" font-weight="600" text-anchor="start">PREPARATION</text>
+<text x="858" y="356" font-size="19" fill="#16181d" font-weight="600" text-anchor="start">Device pipelines + layouts</text>
+<text x="858" y="379" font-size="14" fill="#626976" font-weight="400" text-anchor="start">Entry point, overrides, compatibility</text>
+</g>
+<g data-component="Completion + readback"><rect x="64" y="510" width="296" height="98" rx="10" fill="#f2f6ff" stroke="#245cd6" stroke-width="1.3"/>
+<text x="82" y="531" font-size="11" fill="#245cd6" font-weight="600" text-anchor="start">OBSERVATION</text>
+<text x="82" y="556" font-size="19" fill="#16181d" font-weight="600" text-anchor="start">Completion + readback</text>
+<text x="82" y="579" font-size="14" fill="#626976" font-weight="400" text-anchor="start">Queue status, mapping, error delivery</text>
+</g>
+<g data-component="Backend submission"><rect x="452" y="510" width="296" height="98" rx="10" fill="#ffffff" stroke="#16181d" stroke-width="1.3"/>
+<text x="470" y="531" font-size="11" fill="#16181d" font-weight="600" text-anchor="start">SELECTED NATIVE BACKEND</text>
+<text x="470" y="556" font-size="19" fill="#16181d" font-weight="600" text-anchor="start">Backend submission</text>
+<text x="470" y="579" font-size="14" fill="#626976" font-weight="400" text-anchor="start">Replay, barriers, completion tracking</text>
+</g>
+<g data-component="Platform driver + GPU"><rect x="840" y="510" width="296" height="98" rx="10" fill="#fff3f5" stroke="#d52749" stroke-width="1.3"/>
+<text x="858" y="531" font-size="11" fill="#d52749" font-weight="600" text-anchor="start">COMPUTATION</text>
+<text x="858" y="556" font-size="19" fill="#16181d" font-weight="600" text-anchor="start">Platform driver + GPU</text>
+<text x="858" y="579" font-size="14" fill="#626976" font-weight="400" text-anchor="start">Shader execution and memory operations</text>
+</g>
+<text x="64" y="702" font-size="14" fill="#626976" font-weight="400" text-anchor="start">Compiler output can be used independently. Submission, completion, and safe resource release are distinct.</text>
+</svg>

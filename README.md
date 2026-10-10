@@ -99,45 +99,25 @@ Inspect the raw receipt and merged classification before updating status.
 
 ## Technical architecture
 
-These views trace source at `49f6e0af0`. Compiler, native runtime and backend support
+The component view follows source at `198d56d34`. Compiler, native runtime and backend support
 remain separately qualified. See the [architecture guide](docs/architecture.md#technical-diagrams)
 for source owners and implementation details.
 
 ### Compiler and runtime ownership
 
-The compiler can return target code without opening a Doe device. Native execution
-selects a backend; emission alone does not establish platform qualification.
+Native execution brings together compiled shader code, live resources, and
+recorded commands. Completion travels back through the object layer; submitting
+work alone does not make output readable or resources safe to reuse. Solid arrows
+show calls or data; the dotted return marks lifetime coordination.
 
-```mermaid
-flowchart TB
-    APP["Application or framework<br/>WGSL, descriptors, inputs"]
-    JS["doe-gpu native bindings<br/>JavaScript values and callbacks"]
-    EMBED["Native embedding / proc table<br/>WebGPU ABI calls"]
-    API["Native WebGPU objects<br/>validation, references, command recording"]
-    FRONT["WGSL frontend<br/>parse and semantic analysis"]
-    IR["Typed IR<br/>validation, robustness, rewrites"]
-    EMIT["Target lowering and emission<br/>SPIR-V, MSL, HLSL / DXIL"]
-    BACK["Selected native backend<br/>resources, pipelines, synchronization"]
-    DRIVER["Platform API and driver<br/>target compilation and GPU execution"]
-    COMP["Independent compiler caller<br/>source, options, allocator, diagnostics"]
-    CODE["Emitted shader and diagnostics<br/>caller owns subsequent integration"]
-    APP --> JS --> API
-    APP --> EMBED --> API
-    API -->|shader preparation| FRONT
-    COMP --> FRONT --> IR --> EMIT
-    EMIT --> CODE
-    EMIT -->|target shader| BACK
-    API -->|resources and recorded work| BACK
-    BACK --> DRIVER
-    classDef host fill:#ffffff,stroke:#111827,color:#111827
-    classDef compiler fill:#f3edff,stroke:#7c3aed,color:#111827
-    classDef runtime fill:#edf3ff,stroke:#2563eb,color:#111827
-    classDef hardware fill:#fff0f3,stroke:#e11d48,color:#111827
-    class APP,JS,EMBED,COMP,CODE host
-    class FRONT,IR,EMIT compiler
-    class API,BACK runtime
-    class DRIVER hardware
-```
+![Nine Doe components show shader compilation, resources, and recorded commands converging at backend submission, with GPU completion returning results and governing resource retirement.](assets/readme/technical-architecture.svg)
+
+[Open the diagram at full size](assets/readme/technical-architecture.svg).
+
+Compiler callers can consume emitted code independently of the runtime. Native
+execution uses one selected backend; the target list is not a fallback chain or
+a claim of equal backend support. Command references keep dependencies alive;
+completion and ownership rules govern their eventual release.
 
 ### Optional prepared-program resource lifetime
 
